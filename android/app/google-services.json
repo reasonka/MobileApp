@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "188727929955",
+    "project_id": "baebble-first",
+    "storage_bucket": "baebble-first.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:188727929955:android:dcbbde10d9c17eec531c56",
+        "android_client_info": {
+          "package_name": "com.example.mobile_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPqvsmnkPoUzsBkBUgE1jvEm6likoWRrk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
