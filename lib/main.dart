@@ -1,123 +1,411 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'firebase_options.dart';
+import '../screens/bills/bills_screen.dart';
+// import 'firebase_options.dart'; // ← uncomment after running flutterfire configure
+
+// ── Temporary user session placeholder ───────
+// Replace with your real session/state management later.
+const String kCurrentUserId = 'USER_ID_HERE';  // ← swap this out
+const String kHouseId       = 'HOUSE_ID_HERE'; // ← swap this out
+
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+    // options: DefaultFirebaseOptions.currentPlatform,
   );
-
-  runApp(const MyApp());
+  runApp(const HomieApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class HomieApp extends StatelessWidget {
+  const HomieApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'Homie',
       debugShowCheckedModeBanner: false,
-      home: const NotesPage(),
-    );//HIIIII THIS IS AIDYN
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF0D0D1A),
+        colorScheme: const ColorScheme.dark(
+          primary:   Color(0xFFE040FB),
+          secondary: Color(0xFF00C9A7),
+          surface:   Color(0xFF1A1A2E),
+        ),
+      ),
+      home: const RootNavigation(),
+    );
   }
 }
 
-class NotesPage extends StatefulWidget {
-  const NotesPage({super.key});
+// ─────────────────────────────────────────────
+// PALETTE
+// ─────────────────────────────────────────────
+
+const _bg        = Color(0xFF0D0D1A);
+const _navBg     = Color(0xFF14142A);
+const _navBorder = Color(0xFF2E2E50);
+const _pink      = Color(0xFFE040FB);
+const _inactive  = Color(0xFF6B6892);
+
+// ─────────────────────────────────────────────
+// NAV ITEMS
+// ─────────────────────────────────────────────
+
+class _NavItem {
+  final IconData icon;
+  final IconData activeIcon;
+  const _NavItem({required this.icon, required this.activeIcon});
+}
+
+const _navItems = [
+  _NavItem(icon: Icons.home_outlined,        activeIcon: Icons.home_rounded),
+  _NavItem(icon: Icons.attach_money_outlined, activeIcon: Icons.attach_money_rounded),
+  _NavItem(icon: Icons.calendar_today_outlined, activeIcon: Icons.calendar_today_rounded),
+];
+
+// ─────────────────────────────────────────────
+// ROOT NAVIGATION
+// ─────────────────────────────────────────────
+
+class RootNavigation extends StatefulWidget {
+  const RootNavigation({super.key});
 
   @override
-  State<NotesPage> createState() => _NotesPageState();
+  State<RootNavigation> createState() => _RootNavigationState();
 }
 
-class _NotesPageState extends State<NotesPage> {
-  final TextEditingController controller = TextEditingController();
-  final FirebaseFirestore db = FirebaseFirestore.instance;
+class _RootNavigationState extends State<RootNavigation>
+    with TickerProviderStateMixin {
 
-  // CREATE
-  Future<void> addNote(String text) async {
-    await db.collection("notes").add({
-      "text": text,
-      "time": Timestamp.now(),
-    });
+  int _current  = 0;
+  int _previous = 0;
+
+  late final List<AnimationController> _controllers = List.generate(
+    _navItems.length,
+    (_) => AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    ),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _controllers[0].value = 1.0;
   }
 
-  // DELETE
-  Future<void> deleteNote(String id) async {
-    await db.collection("notes").doc(id).delete();
+  @override
+  void dispose() {
+    for (final c in _controllers) c.dispose();
+    super.dispose();
+  }
+
+  void _navigateTo(int index) {
+    if (index == _current) return;
+    final bool goingRight = index > _current ||
+        // wrap-around: going from last to first counts as "right"
+        (_current == _navItems.length - 1 && index == 0);
+
+    setState(() {
+      _previous = _current;
+      _current  = index;
+    });
+
+    _controllers[_previous].animateTo(
+      goingRight ? -1.0 : 2.0,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeInOut,
+    ).then((_) {
+      _controllers[_previous].value = goingRight ? 1.0 : 0.0;
+    });
+
+    _controllers[index].value = goingRight ? 1.5 : -0.5;
+    _controllers[index].animateTo(
+      1.0,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  Widget _buildScreen(int index) {
+    switch (index) {
+      case 0:  return const _PlaceholderScreen(label: 'Home');
+      case 1:  return BillsScreen(houseId: kHouseId, currentUserId: kCurrentUserId, houseName: '',);
+      case 2:  return const _PlaceholderScreen(label: 'Calendar');
+      default: return const _PlaceholderScreen(label: '?');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Firebase CRUD Demo")),
-
-      body: Column(
+      backgroundColor: _bg,
+      body: Stack(
         children: [
-
-          // INPUT BOX
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: "Enter note",
-              ),
-            ),
-          ),
-
-          // ADD BUTTON
-          ElevatedButton(
-            onPressed: () {
-              if (controller.text.isNotEmpty) {
-                addNote(controller.text);
-                controller.clear();
-              }
-            },
-            child: const Text("Add Note"),
-          ),
-
-          const SizedBox(height: 10),
-
-          // READ DATA (REAL-TIME)
-          Expanded(
-            child: StreamBuilder(
-              stream: db
-                  .collection("notes")
-                  .orderBy("time", descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final notes = snapshot.data!.docs;
-
-                return ListView.builder(
-                  itemCount: notes.length,
-                  itemBuilder: (context, index) {
-                    final doc = notes[index];
-
-                    return Card(
-                      child: ListTile(
-                        title: Text(doc["text"]),
-
-                        // DELETE BUTTON
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => deleteNote(doc.id),
-                        ),
-                      ),
-                    );
-                  },
+          for (int i = 0; i < _navItems.length; i++)
+            AnimatedBuilder(
+              animation: _controllers[i],
+              builder: (_, child) {
+                final offsetX =
+                    (_controllers[i].value - 1.0) * MediaQuery.of(context).size.width;
+                return Positioned.fill(
+                  child: Transform.translate(
+                    offset: Offset(offsetX, 0),
+                    child: child,
+                  ),
                 );
               },
+              child: _buildScreen(i),
+            ),
+
+          // Belt-conveyor bottom nav
+          Positioned(
+            left: 0, right: 0, bottom: 0,
+            child: _BeltNavBar(
+              currentIndex: _current,
+              onNavigate:   _navigateTo,
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// BELT-CONVEYOR NAV BAR
+//
+// • The pill is fixed in the center of the bar.
+// • The icon strip slides so the active icon sits under the pill.
+// • Tapping the left half → previous tab (wraps).
+// • Tapping the right half → next tab (wraps).
+// ─────────────────────────────────────────────
+
+class _BeltNavBar extends StatefulWidget {
+  final int currentIndex;
+  final ValueChanged<int> onNavigate;
+
+  const _BeltNavBar({
+    required this.currentIndex,
+    required this.onNavigate,
+  });
+
+  @override
+  State<_BeltNavBar> createState() => _BeltNavBarState();
+}
+
+class _BeltNavBarState extends State<_BeltNavBar>
+    with SingleTickerProviderStateMixin {
+
+  // Width of each icon slot on the belt
+  static const double slotW  = 64.0;
+  static const double slotH  = 48.0;
+  // Visible bar shows ~3 slots: one full center + partials on each side
+  static const double _barW  = slotW * 3 + 20;
+  static const double _barH  = slotH + 16;
+
+  late final AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  // Strip offset: when 0 → first icon is centred.
+  // For index i to be centred: offset = -i * slotW
+  double _offset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl  = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 320));
+    _offset = _targetFor(widget.currentIndex);
+    _anim   = AlwaysStoppedAnimation(_offset);
+  }
+
+  @override
+  void didUpdateWidget(_BeltNavBar old) {
+    super.didUpdateWidget(old);
+    if (old.currentIndex != widget.currentIndex) {
+      _slideToIndex(widget.currentIndex, old.currentIndex);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+double _targetFor(int i) {
+  // Start from middle of strip
+  const middle = 15;
+  return -((middle + i) * slotW);
+}
+
+  void _slideToIndex(int to, int from) {
+    // Choose shortest wrap-around path
+    final n       = _navItems.length;
+    int   delta   = to - from;
+    // Normalise to [-n/2, n/2]
+    if (delta >  n ~/ 2) delta -= n;
+    if (delta < -(n ~/ 2)) delta += n;
+
+    final fromOff = _offset;
+    final toOff   = fromOff + delta * slotW * -1;
+
+    _ctrl.reset();
+    _anim = Tween<double>(begin: fromOff, end: toOff).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOutCubic),
+    );
+    _ctrl.forward().then((_) {
+      // Snap to canonical offset so it never drifts
+      _offset = _targetFor(to);
+      _anim   = AlwaysStoppedAnimation(_offset);
+      if (mounted) setState(() {});
+    });
+    _offset = toOff; // track for next delta
+  }
+
+  void _onTap(TapUpDetails d) {
+    final n = _navItems.length;
+    if (d.localPosition.dx < _barW / 2) {
+      widget.onNavigate((widget.currentIndex - 1 + n) % n);
+    } else {
+      widget.onNavigate((widget.currentIndex + 1) % n);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final n = _navItems.length;
+
+    return SafeArea(
+      top: false,
+      child: Center(
+        child: GestureDetector(
+          onTapUp: _onTap,
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(0, 0, 0, 14),
+            width:  _barW,
+            height: _barH,
+            decoration: BoxDecoration(
+              color: _navBg,
+              borderRadius: BorderRadius.circular(40),
+              border: Border.all(color: _navBorder, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color:       Colors.black.withOpacity(0.45),
+                  blurRadius:  24,
+                  offset:      const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(40),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+
+                  // ── Fixed center highlight pill ──────────
+                  Container(
+                    width:  slotW,
+                    height: slotH,
+                    decoration: BoxDecoration(
+                      color:        _pink.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: _pink.withOpacity(0.55),
+                        width: 1.2,
+                      ),
+                    ),
+                  ),
+
+                  // ── Sliding icon belt ────────────────────
+                  // We render ghost slots on each side so the belt
+                  // never shows a gap at the edges when wrapping.
+                  AnimatedBuilder(
+  animation: _anim,
+  builder: (_, __) {
+
+    final dx = _anim.value + (_barW / 2) - (slotW / 2);
+
+    // Build long repeating strip
+    final slots = List.generate(30, (i) {
+      final idx = i % n;
+
+      final active = idx == widget.currentIndex;
+
+      return _Slot(
+        icon: active
+            ? _navItems[idx].activeIcon
+            : _navItems[idx].icon,
+        active: active,
+      );
+    });
+
+    return Transform.translate(
+      offset: Offset(dx, 0),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: slots,
+      ),
+    );
+  },
+),
+
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// A single icon cell on the belt
+class _Slot extends StatelessWidget {
+  final IconData icon;
+  final bool     active;
+  const _Slot({required this.icon, required this.active});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width:  _BeltNavBarState.slotW,
+      height: _BeltNavBarState.slotH,
+      child: Icon(
+        icon,
+        size:  26,
+        color: active ? _pink : _inactive,
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// PLACEHOLDER SCREENS
+// ─────────────────────────────────────────────
+
+class _PlaceholderScreen extends StatelessWidget {
+  final String label;
+  const _PlaceholderScreen({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bg,
+      body: Center(
+        child: Text(
+          label,
+          style: const TextStyle(
+            color:       Color(0xFF6B6892),
+            fontSize:    22,
+            fontWeight:  FontWeight.w500,
+            letterSpacing: 1,
+          ),
+        ),
       ),
     );
   }

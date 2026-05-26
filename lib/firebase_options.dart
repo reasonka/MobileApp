@@ -41,49 +41,46 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyA6ADMx_rFkGv9CQ_0YEYgLfNSGs1bD8VU',
-    appId: '1:188727929955:web:617004f9b4f9df20531c56',
-    messagingSenderId: '188727929955',
-    projectId: 'baebble-first',
-    authDomain: 'baebble-first.firebaseapp.com',
-    storageBucket: 'baebble-first.firebasestorage.app',
-    measurementId: 'G-48FB11QLE9',
+    apiKey: 'AIzaSyDNHb06O2FupHZgXuQSZ0qpW5S9_tnJU4I',
+    appId: '1:671894972446:web:0025a90ff3be928fbda60f',
+    messagingSenderId: '671894972446',
+    projectId: 'baebbletrying',
+    authDomain: 'baebbletrying.firebaseapp.com',
+    storageBucket: 'baebbletrying.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAPqvsmnkPoUzsBkBUgE1jvEm6likoWRrk',
-    appId: '1:188727929955:android:dcbbde10d9c17eec531c56',
-    messagingSenderId: '188727929955',
-    projectId: 'baebble-first',
-    storageBucket: 'baebble-first.firebasestorage.app',
+    apiKey: 'AIzaSyCgYJwcgM-xcDB3cnitwsOisL-PFEvCPWU',
+    appId: '1:671894972446:android:868aa1e0fbf093cfbda60f',
+    messagingSenderId: '671894972446',
+    projectId: 'baebbletrying',
+    storageBucket: 'baebbletrying.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBLd2khSh3iVrOYVTjnGcTqS_Rrp-jexMM',
-    appId: '1:188727929955:ios:b102231f612a1e86531c56',
-    messagingSenderId: '188727929955',
-    projectId: 'baebble-first',
-    storageBucket: 'baebble-first.firebasestorage.app',
-    iosBundleId: 'com.example.mobileApp',
+    apiKey: 'AIzaSyD6zwVwQ8d1ue6Kqwl7hCrckVjlZx1a1pY',
+    appId: '1:671894972446:ios:32327646e6c94443bda60f',
+    messagingSenderId: '671894972446',
+    projectId: 'baebbletrying',
+    storageBucket: 'baebbletrying.firebasestorage.app',
+    iosBundleId: 'com.example.fluttertry',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBLd2khSh3iVrOYVTjnGcTqS_Rrp-jexMM',
-    appId: '1:188727929955:ios:b102231f612a1e86531c56',
-    messagingSenderId: '188727929955',
-    projectId: 'baebble-first',
-    storageBucket: 'baebble-first.firebasestorage.app',
-    iosBundleId: 'com.example.mobileApp',
+    apiKey: 'AIzaSyD6zwVwQ8d1ue6Kqwl7hCrckVjlZx1a1pY',
+    appId: '1:671894972446:ios:32327646e6c94443bda60f',
+    messagingSenderId: '671894972446',
+    projectId: 'baebbletrying',
+    storageBucket: 'baebbletrying.firebasestorage.app',
+    iosBundleId: 'com.example.fluttertry',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyA6ADMx_rFkGv9CQ_0YEYgLfNSGs1bD8VU',
-    appId: '1:188727929955:web:ea9b2893aa16b4cd531c56',
-    messagingSenderId: '188727929955',
-    projectId: 'baebble-first',
-    authDomain: 'baebble-first.firebaseapp.com',
-    storageBucket: 'baebble-first.firebasestorage.app',
-    measurementId: 'G-P03CN4Y1EV',
+    apiKey: 'AIzaSyDNHb06O2FupHZgXuQSZ0qpW5S9_tnJU4I',
+    appId: '1:671894972446:web:68cfe7a7ce0858f6bda60f',
+    messagingSenderId: '671894972446',
+    projectId: 'baebbletrying',
+    authDomain: 'baebbletrying.firebaseapp.com',
+    storageBucket: 'baebbletrying.firebasestorage.app',
   );
-
 }
