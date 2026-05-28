@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/bill_model.dart';
 import '../../models/user_model.dart';
 import '../../services/firestore_service.dart';
-import 'package:fluttertry/theme.dart';
+import '../theme.dart';
 
 class AddBillSheet extends StatefulWidget {
   final String houseId;

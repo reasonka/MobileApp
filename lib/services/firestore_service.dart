@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fluttertry/models/bill_model.dart';
+import '../models/bill_model.dart';
 
 class FirestoreService {
   final _db = FirebaseFirestore.instance;

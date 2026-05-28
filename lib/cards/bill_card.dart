@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/bill_model.dart';
-import 'package:fluttertry/theme.dart';
+import '../theme.dart';
 
 class BillCard extends StatelessWidget {
   final BillModel bill;
