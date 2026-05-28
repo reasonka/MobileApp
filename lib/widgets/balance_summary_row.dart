@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fluttertry/theme.dart';
+import '../theme.dart';
 
 class BalanceSummaryRow extends StatelessWidget {
   final double youOwe;

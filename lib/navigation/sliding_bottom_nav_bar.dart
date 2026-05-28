@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fluttertry/theme.dart';
+import '../theme.dart';
 
 class HomieNavItem {
   final IconData icon;
