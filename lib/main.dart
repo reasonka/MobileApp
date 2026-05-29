@@ -88,13 +88,17 @@ class _RootNavigationState extends State<RootNavigation>
     (_) => AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
+      lowerBound: 0.0,
+      upperBound: 2.0,
     ),
   );
 
   @override
   void initState() {
     super.initState();
-    _controllers[0].value = 1.0;
+    for (int i = 0; i < _controllers.length; i++) {
+      _controllers[i].value = (i == 0) ? 1.0 : 2.0;
+    }
   }
 
   @override
@@ -105,24 +109,31 @@ class _RootNavigationState extends State<RootNavigation>
 
   void _navigateTo(int index) {
     if (index == _current) return;
-    final bool goingRight = index > _current ||
-        // wrap-around: going from last to first counts as "right"
-        (_current == _navItems.length - 1 && index == 0);
+
+    // ── FIXED DIRECTION LOGIC ──────────────────────────────────────────────
+    bool goingRight = index > _current;
+    
+    if (_current == _navItems.length - 1 && index == 0) {
+      goingRight = true;  // Wrap-around going right (Last -> First)
+    } else if (_current == 0 && index == _navItems.length - 1) {
+      goingRight = false; // Wrap-around going left (First -> Last)
+    }
+    // ───────────────────────────────────────────────────────────────────────
 
     setState(() {
       _previous = _current;
       _current  = index;
     });
 
+    // Slide old page out
     _controllers[_previous].animateTo(
-      goingRight ? -1.0 : 2.0,
+      goingRight ? 0.0 : 2.0,
       duration: const Duration(milliseconds: 280),
       curve: Curves.easeInOut,
-    ).then((_) {
-      _controllers[_previous].value = goingRight ? 1.0 : 0.0;
-    });
+    );
 
-    _controllers[index].value = goingRight ? 1.5 : -0.5;
+    // Prepare new page positioning and slide it in
+    _controllers[index].value = goingRight ? 2.0 : 0.0;
     _controllers[index].animateTo(
       1.0,
       duration: const Duration(milliseconds: 280),
@@ -161,7 +172,6 @@ class _RootNavigationState extends State<RootNavigation>
               child: _buildScreen(i),
             ),
 
-          // Belt-conveyor bottom nav
           Positioned(
             left: 0, right: 0, bottom: 0,
             child: _BeltNavBar(
@@ -365,6 +375,7 @@ double _targetFor(int i) {
 }
 
 // A single icon cell on the belt
+// A single icon cell on the belt
 class _Slot extends StatelessWidget {
   final IconData icon;
   final bool     active;
@@ -375,10 +386,18 @@ class _Slot extends StatelessWidget {
     return SizedBox(
       width:  _BeltNavBarState.slotW,
       height: _BeltNavBarState.slotH,
-      child: Icon(
-        icon,
-        size:  26,
-        color: active ? _pink : _inactive,
+      child: Center( // Ensures the icon scales perfectly from its center
+        child: AnimatedScale(
+          // Scales up to 1.3x its size when active, drops back to 1.0x when inactive
+          scale: active ? 1.30 : 1.0, 
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutBack, // Gives it a nice lively "pop" effect
+          child: Icon(
+            icon,
+            size:  26,
+            color: active ? _pink : _inactive,
+          ),
+        ),
       ),
     );
   }
