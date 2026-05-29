@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/bill_model.dart';
+import '../models/event_model.dart';
 
 class FirestoreService {
   final _db = FirebaseFirestore.instance;
@@ -14,6 +15,29 @@ class FirestoreService {
     _nameCache[userId] = name;
     return name;
   }
+
+// ── Events ───────────────────────────────────────────────────────────────
+  Stream<List<EventModel>> eventsStream(String houseId) => _db
+      .collection('events')
+      .where('houseId', isEqualTo: houseId)
+      .orderBy('date', descending: false)
+      .snapshots()
+      .map((s) => s.docs.map(EventModel.fromFirestore).toList());
+
+  Future<void> addEvent({
+    required String title,
+    required DateTime date,
+    required String houseId,
+    required String currentUserId,
+  }) =>
+      _db.collection('events').add(EventModel(
+            eventId: '',
+            title: title,
+            date: date,
+            houseId: houseId,
+            createdBy: currentUserId,
+          ).toMap());
+
 
   // ── Bills ────────────────────────────────────────────────────────────────
   Stream<List<BillModel>> billsStream(String houseId) => _db

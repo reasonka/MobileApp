@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../screens/bills/bills_screen.dart';
-// import 'firebase_options.dart'; // ← uncomment after running flutterfire configure
+import '../screens/calendar/calendar_screen.dart'; // <--- ADD THIS LINE
+// ignore: unused_import
+import 'firebase_options.dart'; // ← uncomment after running flutterfire configure
 
 // ── Temporary user session placeholder ───────
 // Replace with your real session/state management later.
@@ -141,11 +143,11 @@ class _RootNavigationState extends State<RootNavigation>
     );
   }
 
-  Widget _buildScreen(int index) {
+Widget _buildScreen(int index) {
     switch (index) {
       case 0:  return const _PlaceholderScreen(label: 'Home');
       case 1:  return BillsScreen(houseId: kHouseId, currentUserId: kCurrentUserId, houseName: '',);
-      case 2:  return const _PlaceholderScreen(label: 'Calendar');
+      case 2:  return CalendarScreen(houseId: kHouseId, currentUserId: kCurrentUserId); // <--- UPDATED WITH PARAMETERS
       default: return const _PlaceholderScreen(label: '?');
     }
   }
