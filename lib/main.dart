@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import '../screens/bills/bills_screen.dart';
-import '../screens/calendar/calendar_screen.dart'; // <--- ADD THIS LINE
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'screens/bills/bills_screen.dart';
+import 'screens/calendar/calendar_screen.dart';
+import 'screens/home/home_screen.dart';
+import 'screens/login/login_screen.dart';
+import 'screens/login/profile_setup_screen.dart';
+import 'screens/login/family_setup_screen.dart';
 // ignore: unused_import
 import 'firebase_options.dart'; // ← uncomment after running flutterfire configure
-
-// ── Temporary user session placeholder ───────
-// Replace with your real session/state management later.
-const String kCurrentUserId = 'USER_ID_HERE';  // ← swap this out
-const String kHouseId       = 'HOUSE_ID_HERE'; // ← swap this out
 
 
 
@@ -31,13 +33,68 @@ class HomieApp extends StatelessWidget {
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(0xFF0D0D1A),
+        fontFamily: GoogleFonts.poppins().fontFamily,
         colorScheme: const ColorScheme.dark(
           primary:   Color(0xFFE040FB),
           secondary: Color(0xFF00C9A7),
           surface:   Color(0xFF1A1A2E),
         ),
       ),
-      home: const RootNavigation(),
+      // ── AuthGate ───────────────────────────────────────────────────────────
+      // Outer stream: watches Firebase auth state.
+      // Inner stream: watches the user's Firestore doc.
+      // This combination drives the full onboarding flow automatically:
+      //   not logged in          → LoginScreen
+      //   logged in, no profile  → ProfileSetupScreen
+      //   logged in, no houseId  → FamilySetupScreen
+      //   logged in, complete    → RootNavigation
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, authSnap) {
+          if (authSnap.connectionState == ConnectionState.waiting) {
+            return _loadingScaffold;
+          }
+
+          final user = authSnap.data;
+          if (user == null) return const LoginScreen();
+
+          return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .snapshots(),
+            builder: (context, userSnap) {
+              if (userSnap.connectionState == ConnectionState.waiting) {
+                return _loadingScaffold;
+              }
+
+              final data = userSnap.data?.data();
+
+              if (data == null) {
+                // Account created but profile not set up yet
+                return ProfileSetupScreen(
+                  uid: user.uid,
+                  email: user.email ?? '',
+                );
+              }
+
+              if (data['houseId'] == null) {
+                // Profile exists but not linked to a house yet
+                return FamilySetupScreen(
+                  uid: user.uid,
+                  userName: data['name'] as String? ?? '',
+                );
+              }
+
+              // Fully onboarded — show main app with real IDs
+              return RootNavigation(
+                userId: user.uid,
+                houseId: data['houseId'] as String,
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
@@ -45,6 +102,14 @@ class HomieApp extends StatelessWidget {
 // ─────────────────────────────────────────────
 // PALETTE
 // ─────────────────────────────────────────────
+
+// Shared loading scaffold used by the AuthGate while streams are waiting
+const _loadingScaffold = Scaffold(
+  backgroundColor: Color(0xFF0D0D1A),
+  body: Center(
+    child: CircularProgressIndicator(color: Color(0xFFE040FB)),
+  ),
+);
 
 const _bg        = Color(0xFF0D0D1A);
 const _navBg     = Color(0xFF14142A);
@@ -73,7 +138,14 @@ const _navItems = [
 // ─────────────────────────────────────────────
 
 class RootNavigation extends StatefulWidget {
-  const RootNavigation({super.key});
+  final String userId;
+  final String houseId;
+
+  const RootNavigation({
+    super.key,
+    required this.userId,
+    required this.houseId,
+  });
 
   @override
   State<RootNavigation> createState() => _RootNavigationState();
@@ -145,9 +217,9 @@ class _RootNavigationState extends State<RootNavigation>
 
 Widget _buildScreen(int index) {
     switch (index) {
-      case 0:  return const _PlaceholderScreen(label: 'Home');
-      case 1:  return BillsScreen(houseId: kHouseId, currentUserId: kCurrentUserId, houseName: '',);
-      case 2:  return CalendarScreen(houseId: kHouseId, currentUserId: kCurrentUserId); // <--- UPDATED WITH PARAMETERS
+      case 0:  return HomeScreen(userId: widget.userId, houseId: widget.houseId);
+      case 1:  return BillsScreen(houseId: widget.houseId, currentUserId: widget.userId, houseName: '');
+      case 2:  return CalendarScreen(houseId: widget.houseId, currentUserId: widget.userId);
       default: return const _PlaceholderScreen(label: '?');
     }
   }
@@ -358,9 +430,13 @@ double _targetFor(int i) {
 
     return Transform.translate(
       offset: Offset(dx, 0),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: slots,
+      child: OverflowBox(
+        maxWidth: double.infinity,
+        alignment: Alignment.centerLeft,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: slots,
+        ),
       ),
     );
   },
@@ -404,7 +480,6 @@ class _Slot extends StatelessWidget {
     );
   }
 }
-
 // ─────────────────────────────────────────────
 // PLACEHOLDER SCREENS
 // ─────────────────────────────────────────────
