@@ -1,25 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../screens/home/home_screen.dart';
 import '../screens/bills/bills_screen.dart';
-
-// TODO: import home_screen.dart and calendar_screen.dart when ready
+import '../screens/calendar/calendar_screen.dart';
 
 const _darkBg   = Color(0xFF0D0D1A);
 const _navBg    = Color(0xFF12122A);
 const _pink     = Color(0xFFE040FB);
 const _inactive = Color(0xFF616161);
 
-// ─────────────────────────────────────────────────────────────────────────────
-// APP SHELL  —  wire all tabs here
-// ─────────────────────────────────────────────────────────────────────────────
 class AppShell extends StatefulWidget {
   final String houseId;
-  final String houseName;
-  final String currentUserId; // pass from your session/auth provider
+  final String currentUserId;
 
   const AppShell({
     super.key,
     required this.houseId,
-    required this.houseName,
     required this.currentUserId,
   });
 
@@ -28,27 +25,85 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  int _index = 1; // start on Bills
+  int _index = 0;
+
+  // Loaded from Firestore
+  String _houseName = '';
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHouseName();
+  }
+
+  Future<void> _loadHouseName() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('houses')
+          .doc(widget.houseId)
+          .get();
+      if (mounted) {
+        setState(() {
+          _houseName = (doc.data()?['name'] as String?) ?? 'Our House';
+          _loaded = true;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _houseName = 'Our House';
+          _loaded = true;
+        });
+      }
+    }
+  }
+
+  static const _icons = [
+    Icons.home_rounded,
+    Icons.attach_money_rounded,
+    Icons.calendar_month_rounded,
+  ];
 
   @override
   Widget build(BuildContext context) {
+    // Show a minimal loading screen while house name loads
+    // (usually <300ms since it's one Firestore read)
+    if (!_loaded) {
+      return const Scaffold(
+        backgroundColor: _darkBg,
+        body: Center(
+          child: CircularProgressIndicator(color: _pink),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: _darkBg,
       body: IndexedStack(
         index: _index,
         children: [
-          // 0 – Home  (Aidyn's screen goes here)
-          const _Placeholder(label: 'Home'),
+          // 0 – Home
+          HomeScreen(
+            userId: widget.currentUserId,
+            houseId: widget.houseId,
+          ),
 
           // 1 – Bills
           BillsScreen(
             houseId: widget.houseId,
-            houseName: widget.houseName,
             currentUserId: widget.currentUserId,
+            houseName: _houseName,
+            avatarIndex: 0,
           ),
 
-          // 2 – Calendar  (Ellen's screen goes here)
-          const _Placeholder(label: 'Calendar'),
+          // 2 – Calendar
+          CalendarScreen(
+            houseId: widget.houseId,
+            currentUserId: widget.currentUserId,
+            houseName: _houseName,
+            avatarIndex: 0,
+          ),
         ],
       ),
       bottomNavigationBar: _SlidingNavBar(
@@ -60,8 +115,9 @@ class _AppShellState extends State<AppShell> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SLIDING BOTTOM NAV BAR
+// SLIDING BOTTOM NAV BAR  (unchanged from your original)
 // ─────────────────────────────────────────────────────────────────────────────
+
 class _SlidingNavBar extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onChanged;
@@ -79,7 +135,7 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _anim;
-  int _prev = 1;
+  int _prev = 0;
 
   static const _icons = [
     Icons.home_rounded,
@@ -121,13 +177,13 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
       height: 72,
       decoration: BoxDecoration(
         color: _navBg,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 20,
-              offset: const Offset(0, -4)),
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
         ],
       ),
       child: Stack(
@@ -137,7 +193,8 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
             animation: _anim,
             builder: (context, _) {
               final w = MediaQuery.of(context).size.width / itemCount;
-              final x = (_prev + (widget.currentIndex - _prev) * _anim.value) * w;
+              final x =
+                  (_prev + (widget.currentIndex - _prev) * _anim.value) * w;
               return Positioned(
                 left: x + w * 0.25,
                 top: 10,
@@ -149,9 +206,10 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                          color: _pink.withOpacity(0.45),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4)),
+                        color: _pink.withOpacity(0.45),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
                     ],
                   ),
                 ),
@@ -187,25 +245,6 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
             }),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PLACEHOLDER  —  replace with real screens
-// ─────────────────────────────────────────────────────────────────────────────
-class _Placeholder extends StatelessWidget {
-  final String label;
-  const _Placeholder({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        label,
-        style:
-            const TextStyle(color: Colors.white38, fontSize: 22),
       ),
     );
   }

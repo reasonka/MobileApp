@@ -56,7 +56,23 @@ class FirestoreService {
 
     return profiles;
   }
+// ── Leave House ──────────────────────────────────────────────────────────────
 
+  Future<void> leaveHouse(String userId, String houseId) async {
+    final batch = _db.batch();
+
+    // 1. Remove the houseId from the user's document
+    batch.update(_db.collection('users').doc(userId), {
+      'houseId': FieldValue.delete(),
+    });
+
+    // 2. Remove the user from the house's members array
+    batch.update(_db.collection('houses').doc(houseId), {
+      'members': FieldValue.arrayRemove([userId]),
+    });
+
+    await batch.commit();
+  }
   // ── Events ───────────────────────────────────────────────────────────────────
 
   Stream<List<EventModel>> eventsStream(String houseId) => _db
@@ -65,6 +81,27 @@ class FirestoreService {
       .orderBy('date')
       .snapshots()
       .map((s) => s.docs.map(EventModel.fromFirestore).toList());
+
+Future<void> updateEvent({
+    required String eventId,
+    required String title,
+    required DateTime date,
+    required String houseId, // Kept so your UI parameters don't break
+  }) async {
+    // Point directly to the root 'events' collection and find the specific event doc
+    await _db.collection('events').doc(eventId).update({
+      'title': title,
+      'date': Timestamp.fromDate(date),
+    });
+  }
+
+  Future<void> deleteEvent({
+    required String eventId,
+    required String houseId, // Kept so your UI parameters don't break
+  }) async {
+    // Point directly to the root 'events' collection and delete the specific event doc
+    await _db.collection('events').doc(eventId).delete();
+  }
 
   Future<void> addEvent({
     required String title,

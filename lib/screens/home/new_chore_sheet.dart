@@ -156,7 +156,7 @@ class _NewChoreSheetState extends State<NewChoreSheet> {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: widget.members.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
               itemBuilder: (_, i) {
                 final m = widget.members[i];
                 final uid = m['userId'] as String;

@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Added for month/year formatting
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../../models/event_model.dart';
 import '../../cards/event_card.dart';
 import '../../cards/add_event_sheet.dart';
 import '../../services/firestore_service.dart';
+import '../../widgets/shared_app_bar.dart';
 
 class CalendarScreen extends StatefulWidget {
   final String houseId;
   final String currentUserId;
+  final String houseName;
+  final int avatarIndex;
 
   const CalendarScreen({
-    Key? key,
+    super.key,
     required this.houseId,
     required this.currentUserId,
-  }) : super(key: key);
+    required this.houseName,
+    required this.avatarIndex,
+  });
 
   @override
   State<CalendarScreen> createState() => _CalendarScreenState();
@@ -32,33 +38,37 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _eventsStream = _firestoreService.eventsStream(widget.houseId);
   }
 
-  // Helper method to clear hours/minutes comparisons
-  bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  String get _weekRangeLabel {
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final sunday = monday.add(const Duration(days: 6));
+    String fmt(DateTime d) =>
+        '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
+    return '(${fmt(monday)}-${fmt(sunday)})';
   }
 
-  // Generates complete listing of days inside targeting monthly window
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
   List<DateTime> _getDaysInMonth(DateTime month) {
-    final first = DateTime(month.year, month.month, 1);
     final last = DateTime(month.year, month.month + 1, 0);
     return List.generate(
       last.day,
-      (index) => DateTime(month.year, month.month, index + 1),
+      (i) => DateTime(month.year, month.month, i + 1),
     );
   }
 
-  // ── Month Navigation Controls ──────────────────────────────────────────────
-  void _goToPreviousMonth() {
-    setState(() {
-      _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1, 1);
-    });
-  }
+  // ── Month navigation ───────────────────────────────────────────────────────
 
-  void _goToNextMonth() {
-    setState(() {
-      _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1, 1);
-    });
-  }
+  void _goToPreviousMonth() => setState(() {
+        _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1, 1);
+      });
+
+  void _goToNextMonth() => setState(() {
+        _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1, 1);
+      });
 
   Future<void> _selectMonthYear() async {
     final picked = await showDatePicker(
@@ -66,29 +76,30 @@ class _CalendarScreenState extends State<CalendarScreen> {
       initialDate: _focusedDay,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
-      initialDatePickerMode: DatePickerMode.year, // Starts in year view
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.dark().copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFFE040FB),
-              onPrimary: Colors.white,
-              surface: Color(0xFF1D1D35),
-              onSurface: Colors.white,
-            ),
-            dialogBackgroundColor: const Color(0xFF14142A),
+      initialDatePickerMode: DatePickerMode.year,
+      builder: (context, child) => Theme(
+        data: ThemeData.dark().copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: Color(0xFFE040FB),
+            onPrimary: Colors.white,
+            surface: Color(0xFF1D1D35),
+            onSurface: Colors.white,
           ),
-          child: child!,
-        );
-      },
+          dialogTheme: const DialogThemeData(
+            backgroundColor: Color(0xFF14142A),
+          ),
+        ),
+        child: child!,
+      ),
     );
     if (picked != null) {
       setState(() {
-        // Set focused day to the 1st of the newly picked month
         _focusedDay = DateTime(picked.year, picked.month, 1);
       });
     }
   }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -100,104 +111,61 @@ class _CalendarScreenState extends State<CalendarScreen> {
         child: StreamBuilder<List<EventModel>>(
           stream: _eventsStream,
           builder: (context, snapshot) {
-            
-            // Catch Firestore Indexes Errors
             if (snapshot.hasError) {
               return Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24.0),
                   child: Text(
-                    "Database Error:\n${snapshot.error}",
-                    style: const TextStyle(color: Colors.redAccent, fontSize: 16),
+                    'Database Error:\n${snapshot.error}',
+                    style: const TextStyle(
+                        color: Colors.redAccent, fontSize: 16),
                     textAlign: TextAlign.center,
                   ),
                 ),
               );
             }
 
-            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator(color: Color(0xFFE040FB)));
+            if (snapshot.connectionState == ConnectionState.waiting &&
+                !snapshot.hasData) {
+              return const Center(
+                child: CircularProgressIndicator(
+                    color: Color(0xFFE040FB)),
+              );
             }
 
             final allEvents = snapshot.data ?? [];
+            final selectedEvents = allEvents
+                .where((e) => _isSameDay(e.date, _selectedDay))
+                .toList();
 
-            // Filter specific elements belonging to chosen date bubble
-            final activeSelectedEvents = allEvents.where((e) => _isSameDay(e.date, _selectedDay)).toList();
+            return CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                // ── Shared app bar ───────────────────────────────────────
+                HouseAppBar(
+  houseId: widget.houseId,
+  currentUserId: widget.currentUserId,
+  weekRangeLabel: _weekRangeLabel,
+),
 
-            return Column(
-              children: [
-                _buildHeader(),
-                
-                // Add the Month Selector right below the main header
-                _buildMonthSelector(),
-
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 4.0),
-                  child: _buildCalendarGrid(daysInMonth, allEvents),
+                // ── Month selector ───────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: _buildMonthSelector(),
                 ),
-                const Spacer(),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFF1A1A2E),
-                        const Color(0xFF14142A).withOpacity(0.95),
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
-                    border: Border(
-                      top: BorderSide(color: Colors.white.withOpacity(0.05)),
-                    ),
+
+                // ── Calendar grid ────────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20.0, vertical: 4.0),
+                    child: _buildCalendarGrid(daysInMonth, allEvents),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (activeSelectedEvents.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 20.0),
-                          child: Center(
-                            child: Text(
-                              "No events scheduled for this day.",
-                              style: TextStyle(color: Colors.grey, fontSize: 15),
-                            ),
-                          ),
-                        )
-                      else
-                        ...activeSelectedEvents.map((event) => EventCard(event: event)).toList(),
-                      const SizedBox(height: 12),
-                      GestureDetector(
-                        onTap: () => AddEventSheet.show(context, widget.houseId, widget.currentUserId),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1D1D35),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white.withOpacity(0.05)),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.add_circle, color: Color(0xFFE040FB)),
-                              SizedBox(width: 12),
-                              Text(
-                                "New event",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 80),
-                    ],
-                  ),
+                ),
+
+                // ── Event panel ──────────────────────────────────────────
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _buildEventPanel(selectedEvents),
                 ),
               ],
             );
@@ -207,38 +175,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const CircleAvatar(
-            backgroundColor: Colors.transparent,
-            child: Icon(Icons.pets, color: Color(0xFFE040FB)),
-          ),
-          const Text(
-            "MAD HOUSE",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.2,
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings, color: Color(0xFF6B6892)),
-            onPressed: () {},
-          ),
-        ],
-      ),
-    );
-  }
+  // ── Month selector ─────────────────────────────────────────────────────────
 
-  // ── Month Selector UI ────────────────────────────────────────────────────
   Widget _buildMonthSelector() {
-    // Formats the month into "MAY 2026"
-    final String monthName = DateFormat('MMMM yyyy').format(_focusedDay).toUpperCase();
+    final monthName =
+        DateFormat('MMMM yyyy').format(_focusedDay).toUpperCase();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -252,15 +193,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
           GestureDetector(
             onTap: _selectMonthYear,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: const Color(0xFF1D1D35),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.05)),
+                border: Border.all(
+                    color: Colors.white.withOpacity(0.05)),
               ),
               child: Text(
                 monthName,
-                style: const TextStyle(
+                style: GoogleFonts.poppins(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -278,11 +221,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _buildCalendarGrid(List<DateTime> days, List<EventModel> events) {
-    final weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-    
-    // Calculate leading padding offset blocks matching specific day-of-week indexes
-    int paddingCount = days.first.weekday - 1;
+  // ── Calendar grid ──────────────────────────────────────────────────────────
+
+  Widget _buildCalendarGrid(
+      List<DateTime> days, List<EventModel> events) {
+    const weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    final paddingCount = days.first.weekday - 1;
 
     return Column(
       children: [
@@ -291,8 +235,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
           children: weekdays
               .map((d) => Text(
                     d,
-                    style: const TextStyle(
-                      color: Color(0xFF6B6892),
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFF6B6892),
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -313,32 +257,47 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
             final dayDate = days[index - paddingCount];
             final isSelected = _isSameDay(dayDate, _selectedDay);
-            final hasEvents = events.any((e) => _isSameDay(e.date, dayDate));
+            final hasEvents =
+                events.any((e) => _isSameDay(e.date, dayDate));
+            final isToday = _isSameDay(dayDate, DateTime.now());
 
             return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedDay = dayDate;
-                });
-              },
+              onTap: () => setState(() => _selectedDay = dayDate),
               child: Container(
                 margin: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isSelected 
-                      ? const Color(0xFFE040FB) 
-                      : (hasEvents ? const Color(0xFF3E3054) : Colors.transparent),
-                  border: hasEvents && !isSelected
-                      ? Border.all(color: const Color(0xFFE040FB).withOpacity(0.5), width: 1)
-                      : null,
+                  color: isSelected
+                      ? const Color(0xFFE040FB)
+                      : hasEvents
+                          ? const Color(0xFF3E3054)
+                          : Colors.transparent,
+                  border: isToday && !isSelected
+                      ? Border.all(
+                          color: const Color(0xFFE040FB).withOpacity(0.6),
+                          width: 1.5)
+                      : hasEvents && !isSelected
+                          ? Border.all(
+                              color: const Color(0xFFE040FB)
+                                  .withOpacity(0.5),
+                              width: 1)
+                          : null,
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   dayDate.day.toString(),
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : (hasEvents ? const Color(0xFFE040FB) : Colors.white70),
+                  style: GoogleFonts.poppins(
+                    color: isSelected
+                        ? Colors.white
+                        : hasEvents
+                            ? const Color(0xFFE040FB)
+                            : isToday
+                                ? const Color(0xFFE040FB)
+                                : Colors.white70,
                     fontSize: 15,
-                    fontWeight: isSelected || hasEvents ? FontWeight.bold : FontWeight.w500,
+                    fontWeight: isSelected || hasEvents || isToday
+                        ? FontWeight.bold
+                        : FontWeight.w500,
                   ),
                 ),
               ),
@@ -346,6 +305,103 @@ class _CalendarScreenState extends State<CalendarScreen> {
           },
         ),
       ],
+    );
+  }
+
+  // ── Event panel ────────────────────────────────────────────────────────────
+
+  Widget _buildEventPanel(List<EventModel> selectedEvents) {
+    final formattedDate =
+        DateFormat('EEEE, d MMMM').format(_selectedDay);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A2E),
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(36)),
+        border: Border(
+          top: BorderSide(color: Colors.white.withOpacity(0.05)),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Date label
+          Text(
+            formattedDate,
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            selectedEvents.isEmpty
+                ? 'No events scheduled'
+                : '${selectedEvents.length} event${selectedEvents.length == 1 ? '' : 's'}',
+            style: GoogleFonts.poppins(
+              color: const Color(0xFF6B6892),
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Event list
+          if (selectedEvents.isNotEmpty)
+            ...selectedEvents.map(
+              (event) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: EventCard(
+                  event: event,
+                  houseId: widget.houseId,
+                  currentUserId: widget.currentUserId,
+                ),
+              ),
+            ),
+
+          const SizedBox(height: 12),
+
+          // New event button
+          GestureDetector(
+            onTap: () => AddEventSheet.show(
+              context,
+              widget.houseId,
+              widget.currentUserId,
+              initialDate: _selectedDay,
+            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1D1D35),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                    color: Colors.white.withOpacity(0.05)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.add_circle,
+                      color: Color(0xFFE040FB)),
+                  const SizedBox(width: 12),
+                  Text(
+                    'New event',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 80),
+        ],
+      ),
     );
   }
 }

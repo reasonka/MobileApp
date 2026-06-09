@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../models/chore_model.dart';
 import '../../models/note_model.dart';
 import '../../services/firestore_service.dart';
+import '../../widgets/settings_screen.dart';
 import '../../theme.dart';
 import 'new_chore_sheet.dart';
 import 'new_note_sheet.dart';
@@ -140,7 +141,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: IconButton(
                           icon: const Icon(Icons.settings_outlined,
                               color: AppColors.pink, size: 26),
-                          onPressed: () {}, // TODO: settings screen
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SettingsScreen(
+                                userId: widget.userId,
+                                houseId: widget.houseId,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -227,7 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: pending.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
               itemBuilder: (_, i) => _buildVoteCard(pending[i]),
             ),
           ),
@@ -449,14 +458,14 @@ class _HomeScreenState extends State<HomeScreen> {
       barrierLabel: 'Close',
       barrierColor: Colors.black.withOpacity(0.78),
       transitionDuration: const Duration(milliseconds: 250),
-      transitionBuilder: (_, anim, __, child) => FadeTransition(
+      transitionBuilder: (_, anim, _, child) => FadeTransition(
         opacity: anim,
         child: ScaleTransition(
           scale: Tween(begin: 0.92, end: 1.0).animate(anim),
           child: child,
         ),
       ),
-      pageBuilder: (_, __, ___) => Center(
+      pageBuilder: (_, _, _) => Center(
         child: Material(
           color: Colors.transparent,
           child: _HousemateOverlay(member: member, chores: chores),

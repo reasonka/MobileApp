@@ -177,7 +177,9 @@ class _RootNavigationState extends State<RootNavigation>
 
   @override
   void dispose() {
-    for (final c in _controllers) c.dispose();
+    for (final c in _controllers) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -218,8 +220,8 @@ class _RootNavigationState extends State<RootNavigation>
 Widget _buildScreen(int index) {
     switch (index) {
       case 0:  return HomeScreen(userId: widget.userId, houseId: widget.houseId);
-      case 1:  return BillsScreen(houseId: widget.houseId, currentUserId: widget.userId, houseName: '');
-      case 2:  return CalendarScreen(houseId: widget.houseId, currentUserId: widget.userId);
+      case 1:  return BillsScreen(houseId: widget.houseId, currentUserId: widget.userId, houseName: '', avatarIndex: 0,);
+      case 2:  return CalendarScreen(houseId: widget.houseId, currentUserId: widget.userId, houseName: '', avatarIndex: 0,);
       default: return const _PlaceholderScreen(label: '?');
     }
   }
@@ -410,7 +412,7 @@ double _targetFor(int i) {
                   // never shows a gap at the edges when wrapping.
                   AnimatedBuilder(
   animation: _anim,
-  builder: (_, __) {
+  builder: (_, _) {
 
     final dx = _anim.value + (_barW / 2) - (slotW / 2);
 

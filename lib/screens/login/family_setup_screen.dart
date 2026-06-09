@@ -567,9 +567,8 @@ class _GradientPillField extends StatelessWidget {
   const _GradientPillField({
     required this.controller,
     required this.label,
-    this.keyboardType,
     this.allCaps = false,
-    this.maxLength,
+    this.maxLength, this.keyboardType,
   });
 
   @override

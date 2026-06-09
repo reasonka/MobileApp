@@ -233,6 +233,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       controller: _nameCtrl,
       label: 'Your Name',
       keyboardType: TextInputType.name,
+      obscureText: false,
     );
   }
 
@@ -448,8 +449,7 @@ class _GradientPillField extends StatelessWidget {
   const _GradientPillField({
     required this.controller,
     required this.label,
-    this.keyboardType,
-    this.obscureText = false,
+    this.keyboardType, required this.obscureText,
   });
 
   @override
