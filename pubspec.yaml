@@ -67,6 +67,10 @@ flutter:
 
   assets:
     - assets/images/login/
+    - assets/images/home/
+    - assets/images/bills/
+    - assets/images/calendar/
+    - assets/images/settings/
     - assets/images/BottomNavBG.png
     - assets/images/homeIcon.png
     - assets/images/Settings.png

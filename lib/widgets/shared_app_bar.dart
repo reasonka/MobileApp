@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/firestore_service.dart';
-import 'settings_screen.dart';
+import '../screens/settings/settings_screen.dart';
 
 class HouseAppBar extends StatefulWidget {
   final String houseId;
