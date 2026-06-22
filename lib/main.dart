@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'screens/bills/bills_screen.dart';
 import 'screens/calendar/calendar_screen.dart';
 import 'screens/home/home_screen.dart';
@@ -105,15 +106,15 @@ class HomieApp extends StatelessWidget {
 
 // Shared loading scaffold used by the AuthGate while streams are waiting
 const _loadingScaffold = Scaffold(
-  backgroundColor: Color(0xFF0D0D1A),
+  backgroundColor: Color(0xFF161823),
   body: Center(
     child: CircularProgressIndicator(color: Color(0xFFE040FB)),
   ),
 );
 
-const _bg        = Color(0xFF0D0D1A);
-const _navBg     = Color(0xFF14142A);
-const _navBorder = Color(0xFF2E2E50);
+const _bg        = Color(0xFF161823);
+const _navBg     = Color(0x33252B4C);
+const _navBorder = Color(0x33FFFFFF);
 const _pink      = Color(0xFFE040FB);
 const _inactive  = Color(0xFF6B6892);
 
@@ -122,15 +123,14 @@ const _inactive  = Color(0xFF6B6892);
 // ─────────────────────────────────────────────
 
 class _NavItem {
-  final IconData icon;
-  final IconData activeIcon;
-  const _NavItem({required this.icon, required this.activeIcon});
+  final String asset;
+  const _NavItem({required this.asset});
 }
 
 const _navItems = [
-  _NavItem(icon: Icons.home_outlined,        activeIcon: Icons.home_rounded),
-  _NavItem(icon: Icons.attach_money_outlined, activeIcon: Icons.attach_money_rounded),
-  _NavItem(icon: Icons.calendar_today_outlined, activeIcon: Icons.calendar_today_rounded),
+  _NavItem(asset: 'assets/images/home/nav_calendar.svg'),
+  _NavItem(asset: 'assets/images/home/nav_home.svg'),
+  _NavItem(asset: 'assets/images/home/nav_bills.svg'),
 ];
 
 // ─────────────────────────────────────────────
@@ -154,8 +154,8 @@ class RootNavigation extends StatefulWidget {
 class _RootNavigationState extends State<RootNavigation>
     with TickerProviderStateMixin {
 
-  int _current  = 0;
-  int _previous = 0;
+  int _current  = 1;
+  int _previous = 1;
 
   late final List<AnimationController> _controllers = List.generate(
     _navItems.length,
@@ -171,7 +171,7 @@ class _RootNavigationState extends State<RootNavigation>
   void initState() {
     super.initState();
     for (int i = 0; i < _controllers.length; i++) {
-      _controllers[i].value = (i == 0) ? 1.0 : 2.0;
+      _controllers[i].value = (i == 1) ? 1.0 : 2.0;
     }
   }
 
@@ -217,10 +217,21 @@ class _RootNavigationState extends State<RootNavigation>
 
 Widget _buildScreen(int index) {
     switch (index) {
-      case 0:  return HomeScreen(userId: widget.userId, houseId: widget.houseId);
-      case 1:  return BillsScreen(houseId: widget.houseId, currentUserId: widget.userId, houseName: '');
-      case 2:  return CalendarScreen(houseId: widget.houseId, currentUserId: widget.userId);
-      default: return const _PlaceholderScreen(label: '?');
+      case 0:
+        return CalendarScreen(
+          houseId: widget.houseId,
+          currentUserId: widget.userId,
+        );
+      case 1:
+        return HomeScreen(userId: widget.userId, houseId: widget.houseId);
+      case 2:
+        return BillsScreen(
+          houseId: widget.houseId,
+          currentUserId: widget.userId,
+          houseName: '',
+        );
+      default:
+        return const _PlaceholderScreen(label: '?');
     }
   }
 
@@ -285,11 +296,11 @@ class _BeltNavBarState extends State<_BeltNavBar>
     with SingleTickerProviderStateMixin {
 
   // Width of each icon slot on the belt
-  static const double slotW  = 64.0;
-  static const double slotH  = 48.0;
-  // Visible bar shows ~3 slots: one full center + partials on each side
-  static const double _barW  = slotW * 3 + 20;
-  static const double _barH  = slotH + 16;
+  static const double slotW  = 72.0;
+  static const double slotH  = 58.0;
+  // Visible bar matches Figma (~360pt wide)
+  static const double _barW  = 360.0;
+  static const double _barH  = 75.0;
 
   late final AnimationController _ctrl;
   late Animation<double> _anim;
@@ -375,35 +386,29 @@ double _targetFor(int i) {
             height: _barH,
             decoration: BoxDecoration(
               color: _navBg,
-              borderRadius: BorderRadius.circular(40),
-              border: Border.all(color: _navBorder, width: 1),
-              boxShadow: [
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: const [
                 BoxShadow(
-                  color:       Colors.black.withOpacity(0.45),
-                  blurRadius:  24,
-                  offset:      const Offset(0, 8),
+                  color: Color(0x40000000),
+                  offset: Offset(0, 4),
+                  blurRadius: 4,
                 ),
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(40),
+              borderRadius: BorderRadius.circular(30),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-
-                  // ── Fixed center highlight pill ──────────
-                  Container(
-                    width:  slotW,
-                    height: slotH,
-                    decoration: BoxDecoration(
-                      color:        _pink.withOpacity(0.18),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: _pink.withOpacity(0.55),
-                        width: 1.2,
+                  if (widget.currentIndex == 1)
+                    Container(
+                      width: 73,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        color: _pink.withOpacity(0.15),
                       ),
                     ),
-                  ),
 
                   // ── Sliding icon belt ────────────────────
                   // We render ghost slots on each side so the belt
@@ -421,10 +426,9 @@ double _targetFor(int i) {
       final active = idx == widget.currentIndex;
 
       return _Slot(
-        icon: active
-            ? _navItems[idx].activeIcon
-            : _navItems[idx].icon,
+        asset: _navItems[idx].asset,
         active: active,
+        large: idx == 1,
       );
     });
 
@@ -455,25 +459,35 @@ double _targetFor(int i) {
 // A single icon cell on the belt
 // A single icon cell on the belt
 class _Slot extends StatelessWidget {
-  final IconData icon;
-  final bool     active;
-  const _Slot({required this.icon, required this.active});
+  final String asset;
+  final bool active;
+  final bool large;
+
+  const _Slot({
+    required this.asset,
+    required this.active,
+    this.large = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final size = large && active ? 58.0 : 46.0;
     return SizedBox(
-      width:  _BeltNavBarState.slotW,
+      width: _BeltNavBarState.slotW,
       height: _BeltNavBarState.slotH,
-      child: Center( // Ensures the icon scales perfectly from its center
+      child: Center(
         child: AnimatedScale(
-          // Scales up to 1.3x its size when active, drops back to 1.0x when inactive
-          scale: active ? 1.30 : 1.0, 
+          scale: active ? 1.08 : 1.0,
           duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOutBack, // Gives it a nice lively "pop" effect
-          child: Icon(
-            icon,
-            size:  26,
-            color: active ? _pink : _inactive,
+          curve: Curves.easeOutBack,
+          child: SvgPicture.asset(
+            asset,
+            width: size,
+            height: size,
+            colorFilter: ColorFilter.mode(
+              active ? _pink : _inactive,
+              BlendMode.srcIn,
+            ),
           ),
         ),
       ),

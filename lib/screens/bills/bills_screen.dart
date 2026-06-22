@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../services/firestore_service.dart';
+import '../home/home_widgets.dart';
+import 'bills_widgets.dart';
 
 // ─────────────────────────────────────────────
 // MODEL
@@ -63,13 +67,11 @@ String _capitalize(String s) =>
 // THEME CONSTANTS
 // ─────────────────────────────────────────────
 
-const _bg         = Color(0xFF0D0D1A);
-const _card       = Color(0xFF1A1A2E);
-const _cardBorder = Color(0xFF2E2E50);
 const _pink       = Color(0xFFE040FB);
-const _pinkDark   = Color(0xFF9C27B0);
 const _textPri    = Color(0xFFFFFFFF);
 const _textSec    = Color(0xFFB0ADCC);
+const _card       = Color(0xFF1A1A2E);
+const _cardBorder = Color(0xFF2E2E50);
 const _pillBg     = Color(0xFF23233A);
 
 // ─────────────────────────────────────────────
@@ -92,6 +94,40 @@ class BillsScreen extends StatefulWidget {
 
 class _BillsScreenState extends State<BillsScreen> {
   final _db = FirebaseFirestore.instance;
+  final _fs = FirestoreService();
+
+  String _houseName = '';
+  int _myAvatarIndex = 0;
+  List<Map<String, dynamic>> _members = [];
+  bool _contextReady = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadContext();
+  }
+
+  Future<void> _loadContext() async {
+    final house = await _fs.getHouseData(widget.houseId);
+    final members = await _fs.getHouseMemberDetails(widget.houseId);
+    final me = members.firstWhere(
+      (m) => m['userId'] == widget.currentUserId,
+      orElse: () => {'avatarIndex': 0},
+    );
+    if (mounted) {
+      setState(() {
+        _houseName = (house?['name'] as String?) ?? 'Our House';
+        _members = members;
+        _myAvatarIndex = me['avatarIndex'] as int? ?? 0;
+        _contextReady = true;
+      });
+    }
+  }
+
+  Map<String, dynamic> _memberFor(String uid) => _members.firstWhere(
+        (m) => m['userId'] == uid,
+        orElse: () => {'name': 'Unknown', 'avatarIndex': 0},
+      );
 
   // ── Firestore stream ───────────────────────
 
@@ -118,21 +154,7 @@ class _BillsScreenState extends State<BillsScreen> {
     return (youOwe, owedToYou);
   }
 
-  // ── User name cache ────────────────────────
-
-  final Map<String, String> _nameCache = {};
-
-  Future<String> _userName(String uid) async {
-    if (_nameCache.containsKey(uid)) return _nameCache[uid]!;
-    try {
-      final doc  = await _db.collection('users').doc(uid).get();
-      final name = (doc.data()?['userName'] as String?) ?? 'Unknown';
-      _nameCache[uid] = name;
-      return name;
-    } catch (_) {
-      return 'Unknown';
-    }
-  }
+  Future<String> _userName(String uid) => _fs.getUserName(uid);
 
   // ── Open sheet ─────────────────────────────
 
@@ -154,8 +176,15 @@ class _BillsScreenState extends State<BillsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_contextReady) {
+      return const Scaffold(
+        backgroundColor: HomeTokens.screenBg,
+        body: Center(child: CircularProgressIndicator(color: _pink)),
+      );
+    }
+
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: HomeTokens.screenBg,
       body: SafeArea(
         child: StreamBuilder<List<Bill>>(
           stream: _billsStream,
@@ -170,77 +199,72 @@ class _BillsScreenState extends State<BillsScreen> {
               );
             }
 
-            final bills               = snap.data ?? [];
+            final bills = snap.data ?? [];
             final (youOwe, owedToYou) = _summarise(bills);
 
             return CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
-
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-                    child: const Text(
-                      'Bills',
-                      style: TextStyle(
-                        fontSize: 28, fontWeight: FontWeight.w700,
-                        color: _textPri, letterSpacing: 0.5,
-                      ),
-                    ),
+                  child: HomeHeader(
+                    houseName: _houseName,
+                    avatarIndex: _myAvatarIndex,
+                    onSettingsTap: () {},
                   ),
                 ),
-
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+                    padding: const EdgeInsets.fromLTRB(
+                      BillsTokens.horizontalPadding,
+                      20,
+                      BillsTokens.horizontalPadding,
+                      0,
+                    ),
                     child: Row(
                       children: [
                         Expanded(
-                          child: _SummaryCard(
+                          child: BillsSummaryCard(
                             label: 'You owe',
                             amount: youOwe,
-                            gradientColors: const [
-                              Color(0xFF6A1B9A), Color(0xFF4A148C), Color(0xFF2A0A5E),
-                            ],
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        const SizedBox(width: 18),
                         Expanded(
-                          child: _SummaryCard(
+                          child: BillsSummaryCard(
                             label: 'Owe you',
                             amount: owedToYou,
-                            gradientColors: const [
-                              Color(0xFF00695C), Color(0xFF004D40), Color(0xFF002B26),
-                            ],
+                            isOweYou: true,
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
-                    child: const Text(
-                      'Pending bills',
-                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: _textPri),
+                    padding: const EdgeInsets.fromLTRB(
+                      BillsTokens.horizontalPadding,
+                      28,
+                      BillsTokens.horizontalPadding,
+                      12,
                     ),
+                    child: const BillsSectionTitle(text: 'Pending bills'),
                   ),
                 ),
-
                 if (bills.isEmpty)
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: BillsTokens.horizontalPadding,
+                        vertical: 40,
+                      ),
                       child: Center(
-                        child: Column(
-                          children: const [
-                            Icon(Icons.receipt_long_outlined, color: _textSec, size: 48),
-                            SizedBox(height: 12),
-                            Text('No pending bills 🎉',
-                                style: TextStyle(color: _textSec, fontSize: 15)),
-                          ],
+                        child: Text(
+                          'No pending bills',
+                          style: GoogleFonts.poppins(
+                            color: _textSec,
+                            fontSize: 15,
+                          ),
                         ),
                       ),
                     ),
@@ -248,193 +272,48 @@ class _BillsScreenState extends State<BillsScreen> {
                 else
                   SliverList(
                     delegate: SliverChildBuilderDelegate(
-                      (ctx, i) => Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                        child: _BillCard(bill: bills[i], getUserName: _userName),
+                      (ctx, i) => FutureBuilder<String>(
+                        future: _userName(bills[i].paidBy),
+                        builder: (context, nameSnap) {
+                          final member = _memberFor(bills[i].paidBy);
+                          return Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              BillsTokens.horizontalPadding,
+                              0,
+                              BillsTokens.horizontalPadding,
+                              i == bills.length - 1 ? 0 : 16,
+                            ),
+                            child: BillsPendingCard(
+                              category: bills[i].category,
+                              amount: bills[i].amount,
+                              paidByName:
+                                  nameSnap.data ?? member['name'] as String,
+                              paidByAvatarIndex:
+                                  member['avatarIndex'] as int? ?? 0,
+                            ),
+                          );
+                        },
                       ),
                       childCount: bills.length,
                     ),
                   ),
-
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-                    child: _NewBillButton(onTap: _openNewBillSheet),
+                    padding: const EdgeInsets.fromLTRB(
+                      BillsTokens.horizontalPadding,
+                      24,
+                      BillsTokens.horizontalPadding,
+                      120,
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: BillsNewBillButton(onTap: _openNewBillSheet),
+                    ),
                   ),
                 ),
               ],
             );
           },
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-// SUMMARY CARD
-// ─────────────────────────────────────────────
-
-class _SummaryCard extends StatelessWidget {
-  final String label;
-  final double amount;
-  final List<Color> gradientColors;
-
-  const _SummaryCard({
-    required this.label,
-    required this.amount,
-    required this.gradientColors,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-            colors: gradientColors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight),
-        border: Border.all(color: _cardBorder, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: gradientColors.first.withOpacity(0.35),
-            blurRadius: 20, offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w500, color: _textSec)),
-          const SizedBox(height: 8),
-          Text('\$${amount.toStringAsFixed(2)}',
-              style: const TextStyle(
-                  fontSize: 32, fontWeight: FontWeight.w800,
-                  color: _textPri, letterSpacing: -1)),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-// BILL CARD
-// ─────────────────────────────────────────────
-
-class _BillCard extends StatelessWidget {
-  final Bill bill;
-  final Future<String> Function(String uid) getUserName;
-
-  const _BillCard({required this.bill, required this.getUserName});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _cardBorder, width: 1),
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-            child: Row(
-              children: [
-                Container(
-                  width: 44, height: 44,
-                  decoration: BoxDecoration(
-                    color: _pillBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: _cardBorder),
-                  ),
-                  child: Icon(_iconForCategory(bill.category), color: _textPri, size: 22),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(_capitalize(bill.category),
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w600, color: _textPri)),
-                ),
-                Text('\$${bill.amount.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w700, color: _textPri)),
-              ],
-            ),
-          ),
-          Divider(height: 1, color: _cardBorder),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-            child: Row(
-              children: [
-                const Text('Paid by',
-                    style: TextStyle(fontSize: 13, color: _textSec)),
-                const SizedBox(width: 8),
-                FutureBuilder<String>(
-                  future: getUserName(bill.paidBy),
-                  builder: (ctx, snap) {
-                    final name = snap.data ?? '…';
-                    return Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircleAvatar(
-                          radius: 13,
-                          backgroundColor: _pinkDark,
-                          child: Text(
-                            name.isNotEmpty ? name[0].toUpperCase() : '?',
-                            style: const TextStyle(
-                                fontSize: 11, fontWeight: FontWeight.w700, color: _textPri),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(name,
-                            style: const TextStyle(
-                                fontSize: 13, fontWeight: FontWeight.w600, color: _textPri)),
-                      ],
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-// NEW BILL BUTTON
-// ─────────────────────────────────────────────
-
-class _NewBillButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _NewBillButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 22),
-        decoration: BoxDecoration(
-          color: _pillBg,
-          borderRadius: BorderRadius.circular(50),
-          border: Border.all(color: _cardBorder, width: 1.5),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.add_circle_outline, color: _textPri, size: 22),
-            SizedBox(width: 10),
-            Text('New bill',
-                style: TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.w600, color: _textPri)),
-          ],
         ),
       ),
     );
@@ -510,7 +389,9 @@ class _NewBillSheetState extends State<_NewBillSheet> {
       final futures = memberIds.map((uid) async {
         try {
           final doc  = await _db.collection('users').doc(uid).get();
-          final name = (doc.data()?['userName'] as String?) ?? uid;
+          final name = (doc.data()?['name'] as String?)
+              ?? (doc.data()?['userName'] as String?)
+              ?? uid;
           return _Member(uid: uid, name: name);
         } catch (_) {
           return _Member(uid: uid, name: uid);
