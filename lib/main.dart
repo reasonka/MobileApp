@@ -221,8 +221,6 @@ Widget _buildScreen(int index) {
         return CalendarScreen(
           houseId: widget.houseId,
           currentUserId: widget.userId,
-          houseName: '',
-          avatarIndex: 0,
         );
       case 1:
         return HomeScreen(userId: widget.userId, houseId: widget.houseId);
@@ -231,7 +229,6 @@ Widget _buildScreen(int index) {
           houseId: widget.houseId,
           currentUserId: widget.userId,
           houseName: '',
-          avatarIndex: 0,
         );
       default:
         return const _PlaceholderScreen(label: '?');
