@@ -69,6 +69,8 @@ flutter:
     - assets/images/login/
     - assets/images/home/
     - assets/images/bills/
+    - assets/images/calendar/
+    - assets/images/settings/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

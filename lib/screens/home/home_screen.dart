@@ -7,6 +7,7 @@ import '../../theme.dart';
 import 'new_chore_sheet.dart';
 import 'new_note_sheet.dart';
 import 'home_widgets.dart';
+import '../settings/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String userId;
@@ -109,7 +110,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             houseName: _houseName,
                             avatarIndex:
                                 _myMember['avatarIndex'] as int? ?? 0,
-                            onSettingsTap: () {},
+                            onSettingsTap: () => SettingsScreen.open(
+                              context,
+                              userId: widget.userId,
+                              houseId: widget.houseId,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 4),

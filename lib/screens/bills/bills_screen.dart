@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../services/firestore_service.dart';
 import '../home/home_widgets.dart';
 import 'bills_widgets.dart';
+import '../settings/settings_screen.dart';
 
 // ─────────────────────────────────────────────
 // MODEL
@@ -209,7 +210,11 @@ class _BillsScreenState extends State<BillsScreen> {
                   child: HomeHeader(
                     houseName: _houseName,
                     avatarIndex: _myAvatarIndex,
-                    onSettingsTap: () {},
+                    onSettingsTap: () => SettingsScreen.open(
+                      context,
+                      userId: widget.currentUserId,
+                      houseId: widget.houseId,
+                    ),
                   ),
                 ),
                 SliverToBoxAdapter(
