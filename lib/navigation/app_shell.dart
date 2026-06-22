@@ -1,25 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../screens/home/home_screen.dart';
 import '../screens/bills/bills_screen.dart';
+import '../screens/calendar/calendar_screen.dart';
 
-// TODO: import home_screen.dart and calendar_screen.dart when ready
+const Color _darkBg = Color(0xFF0D0D1A);
+const Color _pink   = Color(0xFFE040FB);
 
-const _darkBg   = Color(0xFF0D0D1A);
-const _navBg    = Color(0xFF12122A);
-const _pink     = Color(0xFFE040FB);
-const _inactive = Color(0xFF616161);
+// ── Image asset paths ────────────────────────────────────────────────────────
+const String _navBgImage = 'assets/images/BottomNavBG.png';
+const List<String> _navIconPaths = [
+  'assets/images/coinIcon.png',
+  'assets/images/homeIcon.png',
+  'assets/images/calendarIcon.png',
+];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// APP SHELL  —  wire all tabs here
-// ─────────────────────────────────────────────────────────────────────────────
 class AppShell extends StatefulWidget {
   final String houseId;
-  final String houseName;
-  final String currentUserId; // pass from your session/auth provider
+  final String currentUserId;
 
   const AppShell({
     super.key,
     required this.houseId,
-    required this.houseName,
     required this.currentUserId,
   });
 
@@ -28,27 +30,74 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  int _index = 1; // start on Bills
+  int _index = 1; // start on Home (middle tab)
+
+  String _houseName = '';
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHouseName();
+  }
+
+  Future<void> _loadHouseName() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('houses')
+          .doc(widget.houseId)
+          .get();
+      if (mounted) {
+        setState(() {
+          _houseName = (doc.data()?['name'] as String?) ?? 'Our House';
+          _loaded = true;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _houseName = 'Our House';
+          _loaded = true;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (!_loaded) {
+      return const Scaffold(
+        backgroundColor: _darkBg,
+        body: Center(
+          child: CircularProgressIndicator(color: _pink),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: _darkBg,
       body: IndexedStack(
         index: _index,
         children: [
-          // 0 – Home  (Aidyn's screen goes here)
-          const _Placeholder(label: 'Home'),
-
-          // 1 – Bills
+          // 0 – Bills
           BillsScreen(
             houseId: widget.houseId,
-            houseName: widget.houseName,
             currentUserId: widget.currentUserId,
+            houseName: _houseName,
+            avatarIndex: 0,
           ),
-
-          // 2 – Calendar  (Ellen's screen goes here)
-          const _Placeholder(label: 'Calendar'),
+          // 1 – Home (middle)
+          HomeScreen(
+            userId: widget.currentUserId,
+            houseId: widget.houseId,
+          ),
+          // 2 – Calendar
+          CalendarScreen(
+            houseId: widget.houseId,
+            currentUserId: widget.currentUserId,
+            houseName: _houseName,
+            avatarIndex: 0,
+          ),
         ],
       ),
       bottomNavigationBar: _SlidingNavBar(
@@ -62,6 +111,7 @@ class _AppShellState extends State<AppShell> {
 // ─────────────────────────────────────────────────────────────────────────────
 // SLIDING BOTTOM NAV BAR
 // ─────────────────────────────────────────────────────────────────────────────
+
 class _SlidingNavBar extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onChanged;
@@ -79,13 +129,7 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _anim;
-  int _prev = 1;
-
-  static const _icons = [
-    Icons.home_rounded,
-    Icons.attach_money_rounded,
-    Icons.calendar_month_rounded,
-  ];
+  int _prev = 0;
 
   @override
   void initState() {
@@ -120,24 +164,29 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
     return Container(
       height: 72,
       decoration: BoxDecoration(
-        color: _navBg,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(24)),
+        // ── Image background ───────────────────────────────────────────
+        image: const DecorationImage(
+          image: AssetImage(_navBgImage),
+          fit: BoxFit.fill,
+        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 20,
-              offset: const Offset(0, -4)),
+            color: Colors.black.withValues(alpha: 0.5),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
         ],
       ),
       child: Stack(
         children: [
-          // Sliding pink pill
+          // ── Sliding pill (semi-transparent so BG image shows through) ──
           AnimatedBuilder(
             animation: _anim,
             builder: (context, _) {
               final w = MediaQuery.of(context).size.width / itemCount;
-              final x = (_prev + (widget.currentIndex - _prev) * _anim.value) * w;
+              final x =
+                  (_prev + (widget.currentIndex - _prev) * _anim.value) * w;
               return Positioned(
                 left: x + w * 0.25,
                 top: 10,
@@ -145,13 +194,14 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
                   width: w * 0.5,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: _pink,
+                    color: _pink.withValues(alpha: 0.35),
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                          color: _pink.withOpacity(0.45),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4)),
+                        color: _pink.withValues(alpha: 0.45),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
                     ],
                   ),
                 ),
@@ -159,7 +209,7 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
             },
           ),
 
-          // Icon buttons
+          // ── Image icon buttons ─────────────────────────────────────────
           Row(
             children: List.generate(itemCount, (i) {
               final active = widget.currentIndex == i;
@@ -171,13 +221,26 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
                     height: 72,
                     child: Center(
                       child: AnimatedScale(
-                        scale: active ? 1.15 : 1.0,
+                        scale: active ? 1.2 : 1.0,
                         duration: const Duration(milliseconds: 250),
                         curve: Curves.easeOutBack,
-                        child: Icon(
-                          _icons[i],
-                          color: active ? Colors.white : _inactive,
-                          size: 24,
+                        // Dim inactive icons
+                        child: ColorFiltered(
+                          colorFilter: active
+                              ? const ColorFilter.mode(
+                                  Colors.transparent,
+                                  BlendMode.multiply,
+                                )
+                              : ColorFilter.mode(
+                                  Colors.white.withValues(alpha: 0.35),
+                                  BlendMode.srcATop,
+                                ),
+                          child: Image.asset(
+                            _navIconPaths[i],
+                            width: 28,
+                            height: 28,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
                     ),
@@ -187,25 +250,6 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
             }),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PLACEHOLDER  —  replace with real screens
-// ─────────────────────────────────────────────────────────────────────────────
-class _Placeholder extends StatelessWidget {
-  final String label;
-  const _Placeholder({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        label,
-        style:
-            const TextStyle(color: Colors.white38, fontSize: 22),
       ),
     );
   }

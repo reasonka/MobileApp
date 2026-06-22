@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../services/firestore_service.dart';
+import '../../models/event_model.dart';
+import '../../services/firestore_service.dart';
 
-class AddEventSheet extends StatefulWidget {
+class EditEventSheet extends StatefulWidget {
+  final EventModel event;
   final String houseId;
   final String currentUserId;
-  final DateTime? initialDate; // 1. Add this variable
 
-  const AddEventSheet({
+  const EditEventSheet({
     super.key,
+    required this.event,
     required this.houseId,
     required this.currentUserId,
-    this.initialDate, // 2. Add to constructor
   });
 
-  // 3. Update the show method to accept the date
-  static void show(BuildContext context, String houseId, String currentUserId, {DateTime? initialDate}) {
+  static void show(BuildContext context, EventModel event, String houseId, String currentUserId) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -27,31 +27,25 @@ class AddEventSheet extends StatefulWidget {
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        child: AddEventSheet(
-          houseId: houseId, 
-          currentUserId: currentUserId,
-          initialDate: initialDate, // Pass it down to the widget
-        ),
+        child: EditEventSheet(event: event, houseId: houseId, currentUserId: currentUserId),
       ),
     );
   }
 
   @override
-  State<AddEventSheet> createState() => _AddEventSheetState();
+  State<EditEventSheet> createState() => _EditEventSheetState();
 }
 
-class _AddEventSheetState extends State<AddEventSheet> {
-  final _titleController = TextEditingController();
+class _EditEventSheetState extends State<EditEventSheet> {
+  late TextEditingController _titleController;
   final _firestoreService = FirestoreService();
-  
-  // 4. Change this to a 'late' variable
-  late DateTime _selectedDate; 
+  late DateTime _selectedDate;
 
   @override
   void initState() {
     super.initState();
-    // 5. Set the selected date to the one passed in, or default to today if null
-    _selectedDate = widget.initialDate ?? DateTime.now();
+    _titleController = TextEditingController(text: widget.event.title);
+    _selectedDate = widget.event.date;
   }
 
   @override
@@ -77,11 +71,11 @@ class _AddEventSheetState extends State<AddEventSheet> {
   void _submit() async {
     if (_titleController.text.trim().isEmpty) return;
 
-    await _firestoreService.addEvent(
+    await _firestoreService.updateEvent(
+      eventId: widget.event.eventId,
       title: _titleController.text.trim(),
       date: _selectedDate,
       houseId: widget.houseId,
-      currentUserId: widget.currentUserId,
     );
 
     if (mounted) Navigator.pop(context);
@@ -89,7 +83,6 @@ class _AddEventSheetState extends State<AddEventSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // ... the rest of your build method remains exactly the same ...
     return Container(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -97,7 +90,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            "New event",
+            "Edit event",
             style: TextStyle(
               color: Colors.white,
               fontSize: 22,
@@ -141,7 +134,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             child: const Text(
-              "Save Event",
+              "Update Event",
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
             ),
           ),
