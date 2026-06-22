@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../models/event_model.dart';
-import '../../cards/event_card.dart';
 import '../../cards/add_event_sheet.dart';
 import '../../services/firestore_service.dart';
 import '../../widgets/shared_app_bar.dart';
@@ -80,13 +79,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
       builder: (context, child) => Theme(
         data: ThemeData.dark().copyWith(
           colorScheme: const ColorScheme.dark(
-            primary: Color(0xFFE040FB),
+            primary: Color(0xFFB721A9),
             onPrimary: Colors.white,
             surface: Color(0xFF1D1D35),
             onSurface: Colors.white,
           ),
           dialogTheme: const DialogThemeData(
-            backgroundColor: Color(0xFF14142A),
+            backgroundColor: Color(0xFF000000),
           ),
         ),
         child: child!,
@@ -106,10 +105,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final daysInMonth = _getDaysInMonth(_focusedDay);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D1A),
-      body: SafeArea(
-        child: StreamBuilder<List<EventModel>>(
-          stream: _eventsStream,
+      backgroundColor: const Color(0xFF000000),
+      body: StreamBuilder<List<EventModel>>(   // ← directly here, no SafeArea
+  stream: _eventsStream,
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               return Center(
@@ -128,8 +126,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             if (snapshot.connectionState == ConnectionState.waiting &&
                 !snapshot.hasData) {
               return const Center(
-                child: CircularProgressIndicator(
-                    color: Color(0xFFE040FB)),
+                child: CircularProgressIndicator(color: Color(0xFFB721A9)),
               );
             }
 
@@ -138,15 +135,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 .where((e) => _isSameDay(e.date, _selectedDay))
                 .toList();
 
+            // All events sorted by date (past ones will show with strikethrough)
+            final upcomingEvents = allEvents.toList()
+              ..sort((a, b) => a.date.compareTo(b.date));
+
             return CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
                 // ── Shared app bar ───────────────────────────────────────
                 HouseAppBar(
-  houseId: widget.houseId,
-  currentUserId: widget.currentUserId,
-  weekRangeLabel: _weekRangeLabel,
-),
+                  houseId: widget.houseId,
+                  currentUserId: widget.currentUserId,
+                  weekRangeLabel: _weekRangeLabel,
+                ),
 
                 // ── Month selector ───────────────────────────────────────
                 SliverToBoxAdapter(
@@ -165,14 +166,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 // ── Event panel ──────────────────────────────────────────
                 SliverFillRemaining(
                   hasScrollBody: false,
-                  child: _buildEventPanel(selectedEvents),
+                  child: _buildEventPanel(selectedEvents, upcomingEvents),
                 ),
               ],
             );
           },
         ),
-      ),
-    );
+      );
   }
 
   // ── Month selector ─────────────────────────────────────────────────────────
@@ -196,10 +196,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF1D1D35),
+                color: const Color(0xFF111111),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color: Colors.white.withOpacity(0.05)),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
               ),
               child: Text(
                 monthName,
@@ -236,7 +235,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               .map((d) => Text(
                     d,
                     style: GoogleFonts.poppins(
-                      color: const Color(0xFF6B6892),
+                      color: const Color(0xFF555577),
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -257,9 +256,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
             final dayDate = days[index - paddingCount];
             final isSelected = _isSameDay(dayDate, _selectedDay);
+            final isToday = _isSameDay(dayDate, DateTime.now());
             final hasEvents =
                 events.any((e) => _isSameDay(e.date, dayDate));
-            final isToday = _isSameDay(dayDate, DateTime.now());
+            // A day is "past" if it has events and is strictly before today
+            final isPast = hasEvents &&
+                dayDate.isBefore(DateTime(
+                    DateTime.now().year,
+                    DateTime.now().month,
+                    DateTime.now().day));
 
             return GestureDetector(
               onTap: () => setState(() => _selectedDay = dayDate),
@@ -267,37 +272,50 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 margin: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
+                  // Past event days: no fill, just dimmed
+                  // Future event days: magenta tinted fill
                   color: isSelected
-                      ? const Color(0xFFE040FB)
-                      : hasEvents
-                          ? const Color(0xFF3E3054)
+                      ? const Color(0xFFB721A9)
+                      : (hasEvents && !isPast)
+                          ? const Color(0xFF2A0028)
                           : Colors.transparent,
                   border: isToday && !isSelected
                       ? Border.all(
-                          color: const Color(0xFFE040FB).withOpacity(0.6),
+                          color: const Color(0xFFB721A9).withOpacity(0.6),
                           width: 1.5)
-                      : hasEvents && !isSelected
+                      : (hasEvents && !isSelected && !isPast)
                           ? Border.all(
-                              color: const Color(0xFFE040FB)
-                                  .withOpacity(0.5),
+                              color: const Color(0xFFB721A9).withOpacity(0.5),
                               width: 1)
-                          : null,
+                          : isPast && !isSelected
+                              ? Border.all(
+                                  color: Colors.white.withOpacity(0.12),
+                                  width: 1)
+                              : null,
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   dayDate.day.toString(),
                   style: GoogleFonts.poppins(
+                    // Past event days: dimmed grey; future event days: magenta
                     color: isSelected
                         ? Colors.white
-                        : hasEvents
-                            ? const Color(0xFFE040FB)
-                            : isToday
-                                ? const Color(0xFFE040FB)
-                                : Colors.white70,
+                        : isPast
+                            ? Colors.white24
+                            : hasEvents
+                                ? const Color(0xFFB721A9)
+                                : isToday
+                                    ? const Color(0xFFB721A9)
+                                    : Colors.white70,
                     fontSize: 15,
-                    fontWeight: isSelected || hasEvents || isToday
+                    fontWeight: isSelected || (hasEvents && !isPast) || isToday
                         ? FontWeight.bold
                         : FontWeight.w500,
+                    // Strikethrough on the day number for past events
+                    decoration: isPast && !isSelected
+                        ? TextDecoration.lineThrough
+                        : null,
+                    decorationColor: Colors.white24,
                   ),
                 ),
               ),
@@ -310,61 +328,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   // ── Event panel ────────────────────────────────────────────────────────────
 
-  Widget _buildEventPanel(List<EventModel> selectedEvents) {
-    final formattedDate =
-        DateFormat('EEEE, d MMMM').format(_selectedDay);
-
+  Widget _buildEventPanel(
+      List<EventModel> selectedEvents, List<EventModel> upcomingEvents) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A2E),
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(36)),
-        border: Border(
-          top: BorderSide(color: Colors.white.withOpacity(0.05)),
-        ),
-      ),
+      padding: const EdgeInsets.fromLTRB(21, 28, 21, 24),
+      // No card background — matches the flat black style of the first code
+      color: const Color(0xFF000000),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Date label
-          Text(
-            formattedDate,
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            selectedEvents.isEmpty
-                ? 'No events scheduled'
-                : '${selectedEvents.length} event${selectedEvents.length == 1 ? '' : 's'}',
-            style: GoogleFonts.poppins(
-              color: const Color(0xFF6B6892),
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Event list
-          if (selectedEvents.isNotEmpty)
-            ...selectedEvents.map(
-              (event) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: EventCard(
-                  event: event,
-                  houseId: widget.houseId,
-                  currentUserId: widget.currentUserId,
-                ),
-              ),
-            ),
-
-          const SizedBox(height: 12),
-
-          // New event button
+          // ── New event bubble (pill style from first code) ─────────────
           GestureDetector(
             onTap: () => AddEventSheet.show(
               context,
@@ -373,33 +347,127 @@ class _CalendarScreenState extends State<CalendarScreen> {
               initialDate: _selectedDay,
             ),
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 20, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
               decoration: BoxDecoration(
-                color: const Color(0xFF1D1D35),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                    color: Colors.white.withOpacity(0.05)),
+                borderRadius: BorderRadius.circular(15),
+                color: const Color(0x33252B4C),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.add_circle,
-                      color: Color(0xFFE040FB)),
-                  const SizedBox(width: 12),
+                  Container(
+                    width: 31,
+                    height: 31,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFFB721A9),
+                    ),
+                    child: const Icon(Icons.add,
+                        color: Colors.white, size: 20),
+                  ),
+                  const SizedBox(width: 13),
                   Text(
                     'New event',
                     style: GoogleFonts.poppins(
                       color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
             ),
           ),
+
+          const SizedBox(height: 28),
+
+          // ── Upcoming event rows (flat list style from first code) ──────
+          if (upcomingEvents.isEmpty)
+            Text(
+              'No upcoming events',
+              style: GoogleFonts.poppins(
+                color: const Color(0xFF555577),
+                fontSize: 15,
+              ),
+            )
+          else
+            ...upcomingEvents.take(5).map(
+                  (event) => _buildUpcomingEventRow(event),
+                ),
+
           const SizedBox(height: 80),
+        ],
+      ),
+    );
+  }
+
+  // ── Single upcoming event row (matches first code's layout) ───────────────
+
+  Widget _buildUpcomingEventRow(EventModel event) {
+    final dateLabel =
+        '${event.date.day.toString().padLeft(2, '0')}/${event.date.month.toString().padLeft(2, '0')}';
+
+    final today = DateTime(
+        DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final eventDay = DateTime(event.date.year, event.date.month, event.date.day);
+    final isPast = eventDay.isBefore(today);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 9),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Icon circle — greyed out for past events
+          Container(
+            width: 50,
+            height: 50,
+            margin: const EdgeInsets.only(right: 9),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isPast
+                  ? const Color(0xFF1A1A1A)
+                  : const Color(0xFF2A0028),
+              border: Border.all(
+                color: isPast
+                    ? Colors.white.withOpacity(0.12)
+                    : const Color(0xFFB721A9).withOpacity(0.5),
+                width: 1.5,
+              ),
+            ),
+            child: Icon(
+              Icons.event,
+              color: isPast ? Colors.white24 : const Color(0xFFB721A9),
+              size: 22,
+            ),
+          ),
+
+          // Date + title stack
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                dateLabel,
+                style: GoogleFonts.poppins(
+                  color: isPast ? Colors.white24 : Colors.white54,
+                  fontSize: 14,
+                  // Strikethrough the date label too
+                  decoration: isPast ? TextDecoration.lineThrough : null,
+                  decorationColor: Colors.white24,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                event.title,
+                style: GoogleFonts.poppins(
+                  // Dimmed + strikethrough for past events
+                  color: isPast ? Colors.white24 : Colors.white,
+                  fontSize: 18,
+                  decoration: isPast ? TextDecoration.lineThrough : null,
+                  decorationColor: Colors.white24,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

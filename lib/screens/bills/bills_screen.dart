@@ -169,10 +169,9 @@ class _BillsScreenState extends State<BillsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bg,
-      body: SafeArea(
-        child: StreamBuilder<List<Bill>>(
-          stream: _billsStream,
-          builder: (ctx, snap) {
+      body: StreamBuilder<List<Bill>>(   // ← directly here, no SafeArea
+  stream: _billsStream,
+  builder: (ctx, snap) {
             if (snap.connectionState == ConnectionState.waiting &&
                 !snap.hasData) {
               return const Center(
@@ -299,8 +298,7 @@ class _BillsScreenState extends State<BillsScreen> {
             );
           },
         ),
-      ),
-    );
+      );
   }
 }
 

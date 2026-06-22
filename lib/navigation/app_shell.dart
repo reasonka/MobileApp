@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/bills/bills_screen.dart';
 import '../screens/calendar/calendar_screen.dart';
 
-const _darkBg   = Color(0xFF0D0D1A);
-const _navBg    = Color(0xFF12122A);
-const _pink     = Color(0xFFE040FB);
-const _inactive = Color(0xFF616161);
+const Color _darkBg = Color(0xFF0D0D1A);
+const Color _pink   = Color(0xFFE040FB);
+
+// ── Image asset paths ────────────────────────────────────────────────────────
+const String _navBgImage = 'assets/images/BottomNavBG.png';
+const List<String> _navIconPaths = [
+  'assets/images/coinIcon.png',
+  'assets/images/homeIcon.png',
+  'assets/images/calendarIcon.png',
+];
 
 class AppShell extends StatefulWidget {
   final String houseId;
@@ -25,9 +30,8 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  int _index = 0;
+  int _index = 1; // start on Home (middle tab)
 
-  // Loaded from Firestore
   String _houseName = '';
   bool _loaded = false;
 
@@ -59,16 +63,8 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
-  static const _icons = [
-    Icons.home_rounded,
-    Icons.attach_money_rounded,
-    Icons.calendar_month_rounded,
-  ];
-
   @override
   Widget build(BuildContext context) {
-    // Show a minimal loading screen while house name loads
-    // (usually <300ms since it's one Firestore read)
     if (!_loaded) {
       return const Scaffold(
         backgroundColor: _darkBg,
@@ -83,20 +79,18 @@ class _AppShellState extends State<AppShell> {
       body: IndexedStack(
         index: _index,
         children: [
-          // 0 – Home
-          HomeScreen(
-            userId: widget.currentUserId,
-            houseId: widget.houseId,
-          ),
-
-          // 1 – Bills
+          // 0 – Bills
           BillsScreen(
             houseId: widget.houseId,
             currentUserId: widget.currentUserId,
             houseName: _houseName,
             avatarIndex: 0,
           ),
-
+          // 1 – Home (middle)
+          HomeScreen(
+            userId: widget.currentUserId,
+            houseId: widget.houseId,
+          ),
           // 2 – Calendar
           CalendarScreen(
             houseId: widget.houseId,
@@ -115,7 +109,7 @@ class _AppShellState extends State<AppShell> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SLIDING BOTTOM NAV BAR  (unchanged from your original)
+// SLIDING BOTTOM NAV BAR
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _SlidingNavBar extends StatefulWidget {
@@ -136,12 +130,6 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
   late final AnimationController _ctrl;
   late final Animation<double> _anim;
   int _prev = 0;
-
-  static const _icons = [
-    Icons.home_rounded,
-    Icons.attach_money_rounded,
-    Icons.calendar_month_rounded,
-  ];
 
   @override
   void initState() {
@@ -176,11 +164,15 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
     return Container(
       height: 72,
       decoration: BoxDecoration(
-        color: _navBg,
+        // ── Image background ───────────────────────────────────────────
+        image: const DecorationImage(
+          image: AssetImage(_navBgImage),
+          fit: BoxFit.fill,
+        ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             blurRadius: 20,
             offset: const Offset(0, -4),
           ),
@@ -188,7 +180,7 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
       ),
       child: Stack(
         children: [
-          // Sliding pink pill
+          // ── Sliding pill (semi-transparent so BG image shows through) ──
           AnimatedBuilder(
             animation: _anim,
             builder: (context, _) {
@@ -202,11 +194,11 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
                   width: w * 0.5,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: _pink,
+                    color: _pink.withValues(alpha: 0.35),
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: _pink.withOpacity(0.45),
+                        color: _pink.withValues(alpha: 0.45),
                         blurRadius: 16,
                         offset: const Offset(0, 4),
                       ),
@@ -217,7 +209,7 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
             },
           ),
 
-          // Icon buttons
+          // ── Image icon buttons ─────────────────────────────────────────
           Row(
             children: List.generate(itemCount, (i) {
               final active = widget.currentIndex == i;
@@ -229,13 +221,26 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
                     height: 72,
                     child: Center(
                       child: AnimatedScale(
-                        scale: active ? 1.15 : 1.0,
+                        scale: active ? 1.2 : 1.0,
                         duration: const Duration(milliseconds: 250),
                         curve: Curves.easeOutBack,
-                        child: Icon(
-                          _icons[i],
-                          color: active ? Colors.white : _inactive,
-                          size: 24,
+                        // Dim inactive icons
+                        child: ColorFiltered(
+                          colorFilter: active
+                              ? const ColorFilter.mode(
+                                  Colors.transparent,
+                                  BlendMode.multiply,
+                                )
+                              : ColorFilter.mode(
+                                  Colors.white.withValues(alpha: 0.35),
+                                  BlendMode.srcATop,
+                                ),
+                          child: Image.asset(
+                            _navIconPaths[i],
+                            width: 28,
+                            height: 28,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
                     ),

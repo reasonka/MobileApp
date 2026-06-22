@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 
 class HomieNavItem {
-  final IconData icon;
+  final String imagePath; // Changed: uses image asset instead of IconData
   final String label;
 
-  const HomieNavItem({required this.icon, required this.label});
+  const HomieNavItem({required this.imagePath, required this.label});
 }
 
 class SlidingBottomNavBar extends StatefulWidget {
@@ -66,7 +66,11 @@ class _SlidingBottomNavBarState extends State<SlidingBottomNavBar>
     return Container(
       height: 72,
       decoration: BoxDecoration(
-        color: AppColors.navBg,
+        // ── Image background ─────────────────────────────────────────────
+        image: const DecorationImage(
+          image: AssetImage('assets/images/BottomNavBG.png'),
+          fit: BoxFit.fill,
+        ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
@@ -96,7 +100,8 @@ class _SlidingBottomNavBarState extends State<SlidingBottomNavBar>
                   width: itemWidth * 0.5,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: AppColors.pink,
+                    // Semi-transparent highlight so the BG image still shows
+                    color: AppColors.pink.withOpacity(0.35),
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
@@ -125,15 +130,26 @@ class _SlidingBottomNavBarState extends State<SlidingBottomNavBar>
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         AnimatedScale(
-                          scale: active ? 1.15 : 1.0,
+                          scale: active ? 1.2 : 1.0,
                           duration: const Duration(milliseconds: 250),
                           curve: Curves.easeOutBack,
-                          child: Icon(
-                            widget.items[i].icon,
-                            color: active
-                                ? Colors.white
-                                : AppColors.navIconInactive,
-                            size: 24,
+                          child: ColorFiltered(
+                            // Dim inactive icons; keep active ones full colour
+                            colorFilter: active
+                                ? const ColorFilter.mode(
+                                    Colors.transparent,
+                                    BlendMode.multiply,
+                                  )
+                                : ColorFilter.mode(
+                                    Colors.white.withOpacity(0.4),
+                                    BlendMode.srcATop,
+                                  ),
+                            child: Image.asset(
+                              widget.items[i].imagePath,
+                              width: 28,
+                              height: 28,
+                              fit: BoxFit.contain,
+                            ),
                           ),
                         ),
                       ],

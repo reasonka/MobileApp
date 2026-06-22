@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/firestore_service.dart';
-import '../../theme.dart';
 import 'settings_screen.dart';
 
 class HouseAppBar extends StatefulWidget {
@@ -23,11 +22,11 @@ class HouseAppBar extends StatefulWidget {
 }
 
 class _HouseAppBarState extends State<HouseAppBar> {
-  final _fs = FirestoreService();
+  final FirestoreService _fs = FirestoreService();
   String _houseName = '';
   int _avatarIndex = 0;
 
-  static const _gradients = [
+  static const List<List<Color>> _gradients = [
     [Color(0xFF6A1B9A), Color(0xFFE040FB)],
     [Color(0xFF1B5E20), Color(0xFF00C9A7)],
     [Color(0xFF1A237E), Color(0xFF448AFF)],
@@ -54,25 +53,40 @@ class _HouseAppBarState extends State<HouseAppBar> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final colors = _gradients[_avatarIndex.clamp(0, 2)];
+ // Replace the title, leading, and actions with this approach:
 
-    return SliverAppBar(
-      pinned: true,
-      automaticallyImplyLeading: false,
-      backgroundColor: AppColors.darkBg,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      toolbarHeight: 64,
-      titleSpacing: 0,
-      centerTitle: true,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 16),
-        child: Center(
+@override
+Widget build(BuildContext context) {
+  final List<Color> colors = _gradients[_avatarIndex.clamp(0, 2)];
+  final double statusBarHeight = MediaQuery.of(context).padding.top;
+  final double toolbarHeight = 70.0;
+
+
+  return SliverAppBar(
+    pinned: true,
+    automaticallyImplyLeading: false,
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    scrolledUnderElevation: 0,
+    toolbarHeight: toolbarHeight + statusBarHeight,
+    // Remove title, leading, actions entirely — put everything in flexibleSpace
+    flexibleSpace: Stack(
+      children: [
+        // ── Background image ──────────────────────────────────────────
+        Positioned.fill(
+          child: Image.asset(
+            'assets/images/TopPanel.png',
+            fit: BoxFit.fill,
+          ),
+        ),
+
+        // ── Avatar (leading) ──────────────────────────────────────────
+        Positioned(
+          left: 16,
+          top: statusBarHeight + (toolbarHeight - 42) / 2,
           child: Container(
-            width: 38,
-            height: 38,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
@@ -81,69 +95,68 @@ class _HouseAppBarState extends State<HouseAppBar> {
                 end: Alignment.bottomRight,
               ),
             ),
-            child: const Icon(Icons.pets_rounded,
-                color: Colors.white, size: 19),
+            child: const Icon(Icons.pets_rounded, color: Colors.white, size: 19),
           ),
         ),
-      ),
-      title: _houseName.isEmpty
-          ? const SizedBox.shrink()
-          : ShaderMask(
-              shaderCallback: (bounds) => const LinearGradient(
-                colors: [Color(0xFFE040FB), Color(0xFFFFD54F)],
-              ).createShader(bounds),
-              child: Text(
-                _houseName.toUpperCase(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.poppins(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  letterSpacing: 2,
+
+        // ── House name (centered) ─────────────────────────────────────
+        Positioned(
+          left: 70,
+          right: 70,
+          top: statusBarHeight,
+          height: toolbarHeight,
+          child: Center(
+            child: _houseName.isEmpty
+                ? const SizedBox.shrink()
+                : ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: [Color(0xFFE040FB), Color(0xFFFFD54F)],
+                    ).createShader(bounds),
+                    child: Text(
+                      _houseName.toUpperCase(),
+                      maxLines: 2,
+                      overflow: TextOverflow.visible,
+                      textAlign: TextAlign.center,
+                      softWrap: true,
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 2,
+                        height: 1.2,
+                      ),
+                    ),
+                  ),
+          ),
+        ),
+
+        // ── Settings icon (trailing) ──────────────────────────────────
+        Positioned(
+          right: 12,
+          top: statusBarHeight + (toolbarHeight - 32) / 2,
+          child: GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => SettingsScreen(
+                  userId: widget.currentUserId,
+                  houseId: widget.houseId,
                 ),
               ),
             ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: IconButton(
-            icon: const Icon(Icons.settings_outlined,
-                color: AppColors.pink, size: 26),
-            // In shared_app_bar.dart — replace the onPressed
-onPressed: () => Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (_) => SettingsScreen(
-      userId: widget.currentUserId,
-      houseId: widget.houseId,
-    ),
-  ),
-),
+            child: Image.asset(
+              'assets/images/Settings.png',
+              width: 32,
+              height: 32,
+            ),
           ),
         ),
       ],
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(32),
-        child: Column(
-          children: [
-            Text(
-              widget.weekRangeLabel,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                color: AppColors.pink.withOpacity(0.8),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Divider(
-              color: Colors.white12,
-              height: 1,
-              indent: 24,
-              endIndent: 24,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+    ),
+    bottom: const PreferredSize(
+      preferredSize: Size.fromHeight(0),
+      child: SizedBox.shrink(),
+    ),
+  );
+}
 }

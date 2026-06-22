@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../models/chore_model.dart';
 import '../../models/note_model.dart';
 import '../../services/firestore_service.dart';
-import '../../widgets/settings_screen.dart';
+import '../../widgets/shared_app_bar.dart';
 import '../../theme.dart';
 import 'new_chore_sheet.dart';
 import 'new_note_sheet.dart';
@@ -101,82 +101,11 @@ class _HomeScreenState extends State<HomeScreen> {
               return CustomScrollView(
                 slivers: [
                   // ── Sticky header ──────────────────────────────────────────
-                  SliverAppBar(
-                    pinned: true,
-                    automaticallyImplyLeading: false,
-                    backgroundColor: AppColors.darkBg,
-                    elevation: 0,
-                    scrolledUnderElevation: 0,
-                    toolbarHeight: 64,
-                    titleSpacing: 0,
-                    centerTitle: true,
-                    leading: Padding(
-                      padding: const EdgeInsets.only(left: 16),
-                      child: Center(
-                        child: _AvatarCircle(
-                          avatarIndex: _myMember['avatarIndex'] as int? ?? 0,
-                          size: 38,
-                        ),
-                      ),
-                    ),
-                    title: ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [Color(0xFFE040FB), Color(0xFFFFD54F)],
-                      ).createShader(bounds),
-                      child: Text(
-                        _houseName.toUpperCase(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                    ),
-                    actions: [
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: IconButton(
-                          icon: const Icon(Icons.settings_outlined,
-                              color: AppColors.pink, size: 26),
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => SettingsScreen(
-                                userId: widget.userId,
-                                houseId: widget.houseId,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                    // Week + divider shown inside the app bar's "bottom" area
-                    bottom: PreferredSize(
-                      preferredSize: const Size.fromHeight(32),
-                      child: Column(
-                        children: [
-                          Text(
-                            _weekRangeLabel,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: AppColors.pink.withOpacity(0.8),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Divider(
-                            color: Colors.white12,
-                            height: 1,
-                            indent: 24,
-                            endIndent: 24,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
+                  HouseAppBar(
+  houseId: widget.houseId,
+  currentUserId: widget.userId,
+  weekRangeLabel: _weekRangeLabel,
+),
                   if (pendingVotes.isNotEmpty)
                     SliverToBoxAdapter(
                       child: _buildPendingVotesSection(pendingVotes),
