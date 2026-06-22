@@ -84,7 +84,7 @@ class _AppShellState extends State<AppShell> {
             houseId: widget.houseId,
             currentUserId: widget.currentUserId,
             houseName: _houseName,
-            avatarIndex: 0,
+            
           ),
           // 1 – Home (middle)
           HomeScreen(

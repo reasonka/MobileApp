@@ -25,7 +25,7 @@ class EventCard extends StatelessWidget {
     final isDone = eventDate.isBefore(today);
 
     final String formattedDate = DateFormat('dd/MM').format(event.date);
-    final _firestoreService = FirestoreService();
+    final firestoreService = FirestoreService();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12.0),
@@ -97,7 +97,7 @@ class EventCard extends StatelessWidget {
               icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
               onPressed: () async {
                 // optional: show a confirmation dialog first
-                await _firestoreService.deleteEvent(
+                await firestoreService.deleteEvent(
                   eventId: event.eventId,
                   houseId: houseId,
                 );

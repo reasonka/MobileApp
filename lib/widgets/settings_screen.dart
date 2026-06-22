@@ -11,7 +11,6 @@ const _card    = Color(0xFF1A1A2E);
 const _pill    = Color(0xFF1D1D35);
 const _border  = Color(0xFF2E2E50);
 const _pink    = Color(0xFFE040FB);
-const _purple  = Color(0xFF7B2DBD);
 const _textPri = Color(0xFFFFFFFF);
 const _textSec = Color(0xFFB0ADCC);
 const _textMut = Color(0xFF6B6892);
@@ -327,6 +326,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+// ignore: unused_element
 void _confirmLeaveHouse() {
     showDialog(
       context: context,
@@ -828,6 +828,7 @@ class _MenuItem {
 
 // ── Theme option row ───────────────────────────────────────────────────────────
 
+// ignore: unused_element
 class _ThemeOption extends StatelessWidget {
   final String label;
   final IconData icon;
