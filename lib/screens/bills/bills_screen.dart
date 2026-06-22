@@ -602,7 +602,7 @@ class _NewBillSheetState extends State<_NewBillSheet> {
                                   CircleAvatar(
                                     radius: 11,
                                     backgroundColor:
-                                        selected ? _pink : _pinkDark,
+                                        selected ? _pink : _cardBorder,
                                     child: Text(
                                       m.name[0].toUpperCase(),
                                       style: const TextStyle(
