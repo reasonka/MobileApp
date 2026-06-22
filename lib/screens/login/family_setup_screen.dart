@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../theme.dart';
+import 'login_widgets.dart';
 
 class FamilySetupScreen extends StatefulWidget {
   final String uid;
@@ -153,18 +154,22 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkBg,
+      backgroundColor: LoginTokens.screenBg,
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
-          _buildGlowBackground(),
+          const LoginScreenBackground(),
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
+              padding: const EdgeInsets.symmetric(
+                horizontal: LoginTokens.horizontalPadding,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 52),
+                  const SizedBox(height: 44),
+                  const Center(child: LoginCatLogo()),
+                  const SizedBox(height: 36),
                   _buildHeader(),
                   const SizedBox(height: 32),
                   _buildModeToggle(),
@@ -182,51 +187,6 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  // ── Background ───────────────────────────────────────────────────────────────
-
-  Widget _buildGlowBackground() {
-    return Stack(
-      children: [
-        Positioned(
-          top: -60,
-          left: 0,
-          right: 0,
-          child: Container(
-            height: 260,
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment.topCenter,
-                radius: 0.9,
-                colors: [
-                  const Color(0xFFE040FB).withOpacity(0.30),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: -60,
-          left: 0,
-          right: 0,
-          child: Container(
-            height: 260,
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment.bottomCenter,
-                radius: 0.9,
-                colors: [
-                  const Color(0xFF1B5E20).withOpacity(0.35),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -325,17 +285,18 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
           ),
         ),
         const SizedBox(height: 14),
-        _GradientPillField(
+        LoginGradientField(
           controller: _familyNameCtrl,
           label: 'e.g.  The Dream House',
         ),
         if (_error != null) ...[
           const SizedBox(height: 16),
-          _buildErrorBanner(),
+          LoginErrorBanner(message: _error!),
         ],
         const SizedBox(height: 28),
-        _buildPrimaryButton(
+        LoginPrimaryButton(
           label: 'Create Home',
+          loading: _loading,
           onPressed: _createFamily,
         ),
       ],
@@ -430,11 +391,12 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
         ),
         if (_error != null) ...[
           const SizedBox(height: 16),
-          _buildErrorBanner(),
+          LoginErrorBanner(message: _error!),
         ],
         const SizedBox(height: 24),
-        _buildPrimaryButton(
+        LoginPrimaryButton(
           label: "Let's Go!",
+          loading: _loading,
           onPressed: _finalizeCreate,
         ),
       ],
@@ -456,7 +418,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
           ),
         ),
         const SizedBox(height: 14),
-        _GradientPillField(
+        LoginGradientField(
           controller: _inviteCodeCtrl,
           label: 'Invite Code',
           allCaps: true,
@@ -464,150 +426,15 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
         ),
         if (_error != null) ...[
           const SizedBox(height: 16),
-          _buildErrorBanner(),
+          LoginErrorBanner(message: _error!),
         ],
         const SizedBox(height: 28),
-        _buildPrimaryButton(
+        LoginPrimaryButton(
           label: 'Join Home',
+          loading: _loading,
           onPressed: _joinFamily,
         ),
       ],
-    );
-  }
-
-  // ── Shared UI ────────────────────────────────────────────────────────────────
-
-  Widget _buildPrimaryButton({
-    required String label,
-    required VoidCallback onPressed,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF7B2DBD), AppColors.pink],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.pink.withOpacity(0.42),
-              blurRadius: 22,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: ElevatedButton(
-          onPressed: _loading ? null : onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28),
-            ),
-          ),
-          child: _loading
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    color: Colors.white,
-                  ),
-                )
-              : Text(
-                  label,
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorBanner() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.redAccent.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.redAccent.withOpacity(0.35)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline, color: Colors.redAccent, size: 16),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              _error!,
-              style: GoogleFonts.poppins(fontSize: 12, color: Colors.redAccent),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Gradient pill text field ───────────────────────────────────────────────────
-
-class _GradientPillField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final TextInputType? keyboardType;
-  final bool allCaps;
-  final int? maxLength;
-
-  const _GradientPillField({
-    required this.controller,
-    required this.label,
-    this.keyboardType,
-    this.allCaps = false,
-    this.maxLength,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3D1370), Color(0xFF7B2DBD)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        maxLength: maxLength,
-        inputFormatters: allCaps
-            ? [TextInputFormatter.withFunction(
-                (old, next) => next.copyWith(text: next.text.toUpperCase()),
-              )]
-            : null,
-        style: GoogleFonts.poppins(
-          color: Colors.white,
-          fontSize: 15,
-          letterSpacing: allCaps ? 3.0 : 0.0,
-        ),
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          counterText: '',
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          labelText: label,
-          labelStyle: GoogleFonts.poppins(color: Colors.white70, fontSize: 15),
-          floatingLabelBehavior: FloatingLabelBehavior.never,
-        ),
-      ),
     );
   }
 }
