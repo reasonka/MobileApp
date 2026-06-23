@@ -146,26 +146,45 @@ Future<void> updateEvent({
   Future<void> deleteBill(String billId) =>
       _db.collection('bills').doc(billId).delete();
 
-  Future<List<double>> getBalances(String houseId, String currentUserId) async {
-    final snap = await _db
-        .collection('bills')
-        .where('houseId', isEqualTo: houseId)
-        .get();
+  // FIND and REPLACE this entire method:
+Future<void> settleBill({
+  required String billId,
+  required String userId,
+  required bool settled,
+}) =>
+    _db.collection('bills').doc(billId).update({
+      'settledBy': settled
+          ? FieldValue.arrayUnion([userId])
+          : FieldValue.arrayRemove([userId]),
+    });
 
-    double owe = 0, owedToMe = 0;
-    for (final doc in snap.docs) {
-      final b = BillModel.fromFirestore(doc);
-      if (b.paidBy != currentUserId && b.splitBetween.contains(currentUserId)) {
-        owe += b.perPersonAmount;
-      }
-      if (b.paidBy == currentUserId) {
-        final others =
-            b.splitBetween.where((id) => id != currentUserId).length;
-        owedToMe += b.perPersonAmount * others;
-      }
+Future<void> updateBillPayer({
+  required String billId,
+  required String newPayerId,
+}) =>
+    _db.collection('bills').doc(billId).update({'paidBy': newPayerId});
+
+Future<List<double>> getBalances(String houseId, String currentUserId) async {
+  final snap = await _db
+      .collection('bills')
+      .where('houseId', isEqualTo: houseId)
+      .get();
+
+  double owe = 0, owedToMe = 0;
+  for (final doc in snap.docs) {
+    final b = BillModel.fromFirestore(doc);
+    if (b.paidBy != currentUserId && b.splitBetween.contains(currentUserId)) {
+      owe += b.perPersonAmount;
     }
-    return [owe, owedToMe];
+    if (b.paidBy == currentUserId) {
+      final others =
+          b.splitBetween.where((id) => id != currentUserId).length;
+      owedToMe += b.perPersonAmount * others;
+    }
   }
+  return [owe, owedToMe];
+}
+
 
   // ── House members (legacy — kept for bills/calendar compatibility) ────────────
 

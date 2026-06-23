@@ -5,6 +5,7 @@ import '../../models/event_model.dart';
 import '../../cards/add_event_sheet.dart';
 import '../../services/firestore_service.dart';
 import '../../widgets/shared_app_bar.dart';
+import '../../cards/event_card.dart';
 
 class CalendarScreen extends StatefulWidget {
   final String houseId;
@@ -16,8 +17,8 @@ class CalendarScreen extends StatefulWidget {
     super.key,
     required this.houseId,
     required this.currentUserId,
-    required this.houseName,
-    required this.avatarIndex,
+    this.houseName = '',
+    this.avatarIndex = 0,
   });
 
   @override
@@ -28,8 +29,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
-
   late Stream<List<EventModel>> _eventsStream;
+
+  // ── colours ────────────────────────────────────────────────────────────────
+  static const _pink    = Color(0xFFB721A9);
+  static const _bg      = Color(0xFF000000);
+  static const _dimText = Color(0xFF555577);
 
   @override
   void initState() {
@@ -37,10 +42,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _eventsStream = _firestoreService.eventsStream(widget.houseId);
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  // ── helpers ────────────────────────────────────────────────────────────────
 
   String get _weekRangeLabel {
-    final now = DateTime.now();
+    final now    = DateTime.now();
     final monday = now.subtract(Duration(days: now.weekday - 1));
     final sunday = monday.add(const Duration(days: 6));
     String fmt(DateTime d) =>
@@ -53,23 +58,43 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   List<DateTime> _getDaysInMonth(DateTime month) {
     final last = DateTime(month.year, month.month + 1, 0);
-    return List.generate(
-      last.day,
-      (i) => DateTime(month.year, month.month, i + 1),
-    );
+    return List.generate(last.day,
+        (i) => DateTime(month.year, month.month, i + 1));
   }
 
-  // ── Month navigation ───────────────────────────────────────────────────────
+  /// Nearest → furthest for events that haven't happened yet,
+  /// then done events at the bottom (most recently done first).
+   List<EventModel> _sortEventsForList(List<EventModel> events) {
+    final now   = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
 
-  void _goToPreviousMonth() => setState(() {
+    // FIXED: Nearest -> Furthest for upcoming
+    final upcoming = events
+        .where((e) =>
+            !DateTime(e.date.year, e.date.month, e.date.day).isBefore(today))
+        .toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    // FIXED: Done events at the bottom (most recently done first)
+    final done = events
+        .where((e) =>
+            DateTime(e.date.year, e.date.month, e.date.day).isBefore(today))
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    return [...upcoming, ...done];
+  }
+
+
+  void _prevMonth() => setState(() {
         _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1, 1);
       });
 
-  void _goToNextMonth() => setState(() {
+  void _nextMonth() => setState(() {
         _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1, 1);
       });
 
-  Future<void> _selectMonthYear() async {
+  Future<void> _pickMonthYear() async {
     final picked = await showDatePicker(
       context: context,
       initialDate: _focusedDay,
@@ -79,397 +104,320 @@ class _CalendarScreenState extends State<CalendarScreen> {
       builder: (context, child) => Theme(
         data: ThemeData.dark().copyWith(
           colorScheme: const ColorScheme.dark(
-            primary: Color(0xFFB721A9),
+            primary: _pink,
             onPrimary: Colors.white,
             surface: Color(0xFF1D1D35),
             onSurface: Colors.white,
           ),
           dialogTheme: const DialogThemeData(
-            backgroundColor: Color(0xFF000000),
-          ),
+              backgroundColor: Color(0xFF0D0D1A)),
         ),
         child: child!,
       ),
     );
     if (picked != null) {
-      setState(() {
-        _focusedDay = DateTime(picked.year, picked.month, 1);
-      });
+      setState(() => _focusedDay = DateTime(picked.year, picked.month, 1));
     }
   }
 
-  // ── Build ──────────────────────────────────────────────────────────────────
+  // ── build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final daysInMonth = _getDaysInMonth(_focusedDay);
+    final days = _getDaysInMonth(_focusedDay);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
-      body: StreamBuilder<List<EventModel>>(   // ← directly here, no SafeArea
-  stream: _eventsStream,
-          builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return Center(
+      backgroundColor: _bg,
+      body: StreamBuilder<List<EventModel>>(
+        stream: _eventsStream,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Error: ${snapshot.error}',
+                  style: const TextStyle(color: Colors.redAccent)));
+          }
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              !snapshot.hasData) {
+            return const Center(
+                child: CircularProgressIndicator(color: _pink));
+          }
+
+          final allEvents = snapshot.data ?? [];
+          final selectedEvents = allEvents
+              .where((e) => _isSameDay(e.date, _selectedDay))
+              .toList();
+          final sortedAllEvents = _sortEventsForList(allEvents);
+
+          return CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // ── app bar ────────────────────────────────────────────
+              HouseAppBar(
+                houseId: widget.houseId,
+                currentUserId: widget.currentUserId,
+                weekRangeLabel: _weekRangeLabel,
+              ),
+
+              // ── month selector ─────────────────────────────────────
+              SliverToBoxAdapter(child: _buildMonthHeader()),
+
+              // ── weekday labels ─────────────────────────────────────
+              SliverToBoxAdapter(child: _buildWeekdayRow()),
+
+              // ── day grid ───────────────────────────────────────────
+              SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Text(
-                    'Database Error:\n${snapshot.error}',
-                    style: const TextStyle(
-                        color: Colors.redAccent, fontSize: 16),
-                    textAlign: TextAlign.center,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildDayGrid(days, allEvents),
                 ),
-              );
-            }
+              ),
 
-            if (snapshot.connectionState == ConnectionState.waiting &&
-                !snapshot.hasData) {
-              return const Center(
-                child: CircularProgressIndicator(color: Color(0xFFB721A9)),
-              );
-            }
+              // ── divider ────────────────────────────────────────────
+              const SliverToBoxAdapter(
+                child: Divider(
+                    color: Color(0xFF1A1A2E), thickness: 1, height: 24),
+              ),
 
-            final allEvents = snapshot.data ?? [];
-            final selectedEvents = allEvents
-                .where((e) => _isSameDay(e.date, _selectedDay))
-                .toList();
-
-            // All events sorted by date (past ones will show with strikethrough)
-            final upcomingEvents = allEvents.toList()
-              ..sort((a, b) => a.date.compareTo(b.date));
-
-            return CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                // ── Shared app bar ───────────────────────────────────────
-                HouseAppBar(
-                  houseId: widget.houseId,
-                  currentUserId: widget.currentUserId,
-                  weekRangeLabel: _weekRangeLabel,
-                ),
-
-                // ── Month selector ───────────────────────────────────────
-                SliverToBoxAdapter(
-                  child: _buildMonthSelector(),
-                ),
-
-                // ── Calendar grid ────────────────────────────────────────
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20.0, vertical: 4.0),
-                    child: _buildCalendarGrid(daysInMonth, allEvents),
-                  ),
-                ),
-
-                // ── Event panel ──────────────────────────────────────────
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _buildEventPanel(selectedEvents, upcomingEvents),
-                ),
-              ],
-            );
-          },
-        ),
-      );
+              // ── event panel: bounded + internally scrollable ───────
+              SliverFillRemaining(
+                hasScrollBody: true,
+                child: _buildEventPanel(selectedEvents, sortedAllEvents),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
-  // ── Month selector ─────────────────────────────────────────────────────────
+  // ── month header ───────────────────────────────────────────────────────────
 
-  Widget _buildMonthSelector() {
-    final monthName =
-        DateFormat('MMMM yyyy').format(_focusedDay).toUpperCase();
-
+  Widget _buildMonthHeader() {
+    final label = DateFormat('MMMM yyyy').format(_focusedDay).toUpperCase();
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.fromLTRB(8, 12, 8, 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            icon: const Icon(Icons.chevron_left, color: Colors.white70),
-            onPressed: _goToPreviousMonth,
+            icon: const Icon(Icons.chevron_left, color: Colors.white70, size: 28),
+            onPressed: _prevMonth,
           ),
           GestureDetector(
-            onTap: _selectMonthYear,
+            onTap: _pickMonthYear,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF111111),
+                color: const Color(0xFF111122),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                border:
+                    Border.all(color: Colors.white.withValues(alpha: 0.08)),
               ),
               child: Text(
-                monthName,
+                label,
                 style: GoogleFonts.poppins(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 1.1,
+                  letterSpacing: 1.2,
                 ),
               ),
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.chevron_right, color: Colors.white70),
-            onPressed: _goToNextMonth,
+            icon: const Icon(Icons.chevron_right,
+                color: Colors.white70, size: 28),
+            onPressed: _nextMonth,
           ),
         ],
       ),
     );
   }
 
-  // ── Calendar grid ──────────────────────────────────────────────────────────
+  // ── weekday row ────────────────────────────────────────────────────────────
 
-  Widget _buildCalendarGrid(
-      List<DateTime> days, List<EventModel> events) {
-    const weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-    final paddingCount = days.first.weekday - 1;
-
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: weekdays
-              .map((d) => Text(
-                    d,
-                    style: GoogleFonts.poppins(
-                      color: const Color(0xFF555577),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ))
-              .toList(),
-        ),
-        const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: days.length + paddingCount,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 7,
-            childAspectRatio: 1.1,
-          ),
-          itemBuilder: (context, index) {
-            if (index < paddingCount) return const SizedBox.shrink();
-
-            final dayDate = days[index - paddingCount];
-            final isSelected = _isSameDay(dayDate, _selectedDay);
-            final isToday = _isSameDay(dayDate, DateTime.now());
-            final hasEvents =
-                events.any((e) => _isSameDay(e.date, dayDate));
-            // A day is "past" if it has events and is strictly before today
-            final isPast = hasEvents &&
-                dayDate.isBefore(DateTime(
-                    DateTime.now().year,
-                    DateTime.now().month,
-                    DateTime.now().day));
-
-            return GestureDetector(
-              onTap: () => setState(() => _selectedDay = dayDate),
-              child: Container(
-                margin: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  // Past event days: no fill, just dimmed
-                  // Future event days: magenta tinted fill
-                  color: isSelected
-                      ? const Color(0xFFB721A9)
-                      : (hasEvents && !isPast)
-                          ? const Color(0xFF2A0028)
-                          : Colors.transparent,
-                  border: isToday && !isSelected
-                      ? Border.all(
-                          color: const Color(0xFFB721A9).withOpacity(0.6),
-                          width: 1.5)
-                      : (hasEvents && !isSelected && !isPast)
-                          ? Border.all(
-                              color: const Color(0xFFB721A9).withOpacity(0.5),
-                              width: 1)
-                          : isPast && !isSelected
-                              ? Border.all(
-                                  color: Colors.white.withOpacity(0.12),
-                                  width: 1)
-                              : null,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  dayDate.day.toString(),
-                  style: GoogleFonts.poppins(
-                    // Past event days: dimmed grey; future event days: magenta
-                    color: isSelected
-                        ? Colors.white
-                        : isPast
-                            ? Colors.white24
-                            : hasEvents
-                                ? const Color(0xFFB721A9)
-                                : isToday
-                                    ? const Color(0xFFB721A9)
-                                    : Colors.white70,
-                    fontSize: 15,
-                    fontWeight: isSelected || (hasEvents && !isPast) || isToday
-                        ? FontWeight.bold
-                        : FontWeight.w500,
-                    // Strikethrough on the day number for past events
-                    decoration: isPast && !isSelected
-                        ? TextDecoration.lineThrough
-                        : null,
-                    decorationColor: Colors.white24,
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ],
+  Widget _buildWeekdayRow() {
+    const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: days
+            .map((d) => SizedBox(
+                  width: 36,
+                  child: Text(d,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        color: _dimText,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      )),
+                ))
+            .toList(),
+      ),
     );
   }
 
-  // ── Event panel ────────────────────────────────────────────────────────────
+  // ── day grid ───────────────────────────────────────────────────────────────
+
+  Widget _buildDayGrid(List<DateTime> days, List<EventModel> events) {
+    final paddingCount = days.first.weekday - 1;
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: days.length + paddingCount,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 7,
+        childAspectRatio: 1.0,
+        mainAxisSpacing: 4,
+        crossAxisSpacing: 0,
+      ),
+      itemBuilder: (context, index) {
+        if (index < paddingCount) return const SizedBox.shrink();
+
+        final day = days[index - paddingCount];
+        final isSelected = _isSameDay(day, _selectedDay);
+        final hasEvents = events.any((e) => _isSameDay(e.date, day));
+        final isPast = day.isBefore(today);
+
+        // FIXED Logic: 
+        // 1. Selection = Pink Circle with NO fill (Border)
+        // 2. Event = Pink Circle WITH fill
+        return GestureDetector(
+          onTap: () => setState(() => _selectedDay = day),
+          child: Container(
+            margin: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              // Filled if upcoming event
+              color: (hasEvents && !isPast) ? _pink : Colors.transparent,
+              // Pink ring if selected
+              border: isSelected 
+                  ? Border.all(color: _pink, width: 2) 
+                  : (isPast && hasEvents ? Border.all(color: Colors.white10) : null),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '${day.day}',
+              style: GoogleFonts.poppins(
+                color: isPast ? Colors.white24 : Colors.white,
+                fontSize: 14,
+                fontWeight: (hasEvents || isSelected) ? FontWeight.bold : FontWeight.normal,
+                decoration: (isPast && hasEvents) ? TextDecoration.lineThrough : null,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ── event panel ────────────────────────────────────────────────────────────
 
   Widget _buildEventPanel(
       List<EventModel> selectedEvents, List<EventModel> upcomingEvents) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(21, 28, 21, 24),
-      // No card background — matches the flat black style of the first code
-      color: const Color(0xFF000000),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── New event bubble (pill style from first code) ─────────────
-          GestureDetector(
-            onTap: () => AddEventSheet.show(
-              context,
-              widget.houseId,
-              widget.currentUserId,
-              initialDate: _selectedDay,
-            ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15),
-                color: const Color(0x33252B4C),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 31,
-                    height: 31,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFFB721A9),
-                    ),
-                    child: const Icon(Icons.add,
-                        color: Colors.white, size: 20),
-                  ),
-                  const SizedBox(width: 13),
-                  Text(
-                    'New event',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+    final selectedLabel = DateFormat('d MMM yyyy').format(_selectedDay);
 
-          const SizedBox(height: 28),
-
-          // ── Upcoming event rows (flat list style from first code) ──────
-          if (upcomingEvents.isEmpty)
-            Text(
-              'No upcoming events',
-              style: GoogleFonts.poppins(
-                color: const Color(0xFF555577),
-                fontSize: 15,
-              ),
-            )
-          else
-            ...upcomingEvents.take(5).map(
-                  (event) => _buildUpcomingEventRow(event),
-                ),
-
-          const SizedBox(height: 80),
-        ],
-      ),
-    );
-  }
-
-  // ── Single upcoming event row (matches first code's layout) ───────────────
-
-  Widget _buildUpcomingEventRow(EventModel event) {
-    final dateLabel =
-        '${event.date.day.toString().padLeft(2, '0')}/${event.date.month.toString().padLeft(2, '0')}';
-
-    final today = DateTime(
-        DateTime.now().year, DateTime.now().month, DateTime.now().day);
-    final eventDay = DateTime(event.date.year, event.date.month, event.date.day);
-    final isPast = eventDay.isBefore(today);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 9),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Icon circle — greyed out for past events
-          Container(
-            width: 50,
-            height: 50,
-            margin: const EdgeInsets.only(right: 9),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isPast
-                  ? const Color(0xFF1A1A1A)
-                  : const Color(0xFF2A0028),
-              border: Border.all(
-                color: isPast
-                    ? Colors.white.withOpacity(0.12)
-                    : const Color(0xFFB721A9).withOpacity(0.5),
-                width: 1.5,
-              ),
-            ),
-            child: Icon(
-              Icons.event,
-              color: isPast ? Colors.white24 : const Color(0xFFB721A9),
-              size: 22,
-            ),
-          ),
-
-          // Date + title stack
-          Column(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── fixed top section (button, selected-day events) ─────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                dateLabel,
-                style: GoogleFonts.poppins(
-                  color: isPast ? Colors.white24 : Colors.white54,
-                  fontSize: 14,
-                  // Strikethrough the date label too
-                  decoration: isPast ? TextDecoration.lineThrough : null,
-                  decorationColor: Colors.white24,
+              GestureDetector(
+                onTap: () => AddEventSheet.show(
+                  context,
+                  widget.houseId,
+                  widget.currentUserId,
+                  initialDate: _selectedDay,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(15),
+                    color: const Color(0x33252B4C),
+                    border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.06)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: const BoxDecoration(
+                            shape: BoxShape.circle, color: _pink),
+                        child: const Icon(Icons.add,
+                            color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'New event',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 20),
               Text(
-                event.title,
+                selectedEvents.isEmpty
+                    ? 'No events on $selectedLabel'
+                    : 'Events on $selectedLabel',
+                style: GoogleFonts.poppins(color: _dimText, fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              if (selectedEvents.isNotEmpty)
+                ...selectedEvents.map((e) => EventCard(
+                      event: e,
+                      houseId: widget.houseId,
+                      currentUserId: widget.currentUserId,
+                    )),
+              const SizedBox(height: 16),
+              Text(
+                'All events',
                 style: GoogleFonts.poppins(
-                  // Dimmed + strikethrough for past events
-                  color: isPast ? Colors.white24 : Colors.white,
-                  fontSize: 18,
-                  decoration: isPast ? TextDecoration.lineThrough : null,
-                  decorationColor: Colors.white24,
+                  color: Colors.white70,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
+              const SizedBox(height: 10),
             ],
           ),
-        ],
-      ),
+        ),
+
+        // ── bounded, independently scrollable list ───────────────────
+        Expanded(
+          child: upcomingEvents.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text('No events yet',
+                      style:
+                          GoogleFonts.poppins(color: _dimText, fontSize: 14)),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: upcomingEvents.length,
+                  itemBuilder: (context, i) => EventCard(
+                    event: upcomingEvents[i],
+                    houseId: widget.houseId,
+                    currentUserId: widget.currentUserId,
+                  ),
+                ),
+        ),
+      ],
     );
   }
 }

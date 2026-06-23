@@ -21,7 +21,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _fs = FirestoreService();
 
-  String _houseName = '';
   List<Map<String, dynamic>> _members = []; // {userId, name, avatarIndex}
   bool _initialized = false;
 
@@ -32,11 +31,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadHouseData() async {
-    final house = await _fs.getHouseData(widget.houseId);
+    await _fs.getHouseData(widget.houseId);
     final members = await _fs.getHouseMemberDetails(widget.houseId);
     if (mounted) {
       setState(() {
-        _houseName = (house?['name'] as String?) ?? 'Our House';
         _members = members;
         _initialized = true;
       });
