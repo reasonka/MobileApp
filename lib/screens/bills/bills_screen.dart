@@ -742,8 +742,11 @@ Future<void> _saveAmount() async {
             ),
           ),
           Positioned.fill(
-            child: Container(color: _card.withOpacity(0.85)),
-          ),
+          child: Image.asset(
+            'assets/images/calendar/EventMainPanel.png', // ← changed
+            fit: BoxFit.cover,
+  ),
+),
           SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(24, 20, 24, 24 + bottom),
             child: Column(
@@ -1155,14 +1158,18 @@ class _NewBillSheetState extends State<_NewBillSheet> {
         children: [
           // Sheet background image
           Positioned.fill(
+          child: Image.asset(
+            'assets/images/calendar/EventMainPanel.png', 
+            fit: BoxFit.cover,
+          ),
+        ),
+          // Dark overlay
+          // Sheet background image
+          Positioned.fill(
             child: Image.asset(
-              'assets/images/BillSubPanel.png',
+              'assets/images/calendar/EventMainPanel.png', // ← changed
               fit: BoxFit.cover,
             ),
-          ),
-          // Dark overlay
-          Positioned.fill(
-            child: Container(color: _card.withOpacity(0.85)),
           ),
 
           // Content
