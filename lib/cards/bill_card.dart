@@ -341,10 +341,12 @@ class _BillCard extends StatelessWidget {
             children: [
               // ── Layer 1: BillMainPanel background ─────────────────
           Positioned.fill(
+            child: IgnorePointer(     
             child: Image.asset(
               'assets/images/BillMainPanel.png',
               fit: BoxFit.cover,
             ),
+            )
           ),
                            // ── Layer 2: card content ─────────────────────────────
               Column(
@@ -443,7 +445,8 @@ class _BillCard extends StatelessWidget {
                   // ── Layer 3: BillSubPanel bottom strip ────────────
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
-                        bottom: Radius.circular(18)),
+                      bottom: Radius.circular(18),
+                    ),
                     child: Stack(
                       children: [
                         Positioned.fill(
@@ -452,68 +455,100 @@ class _BillCard extends StatelessWidget {
                             fit: BoxFit.fill,
                           ),
                         ),
-                        Padding(
-                          padding:
-                              const EdgeInsets.fromLTRB(14, 10, 14, 14),
-                          child: Row(
-                            children: [
-                              FutureBuilder<String>(
-                                future: getUserName(bill.paidBy),
-                                builder: (ctx, snap) {
-                                  final name = snap.data ?? '…';
-                                  return Row(
-                                    children: [
-                                      Text('Paid by',
-                                          style: GoogleFonts.poppins(
-                                              fontSize: 12,
-                                              color: _textSec)),
-                                      const SizedBox(width: 6),
-                                      CircleAvatar(
-                                        radius: 12,
-                                        backgroundColor: _pinkDark,
-                                        child: Text(
-                                          name.isNotEmpty
-                                              ? name[0].toUpperCase()
-                                              : '?',
-                                          style: GoogleFonts.poppins(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w700,
-                                              color: _textPri),
+                        SizedBox(
+                          height: 60,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            child: Row(
+                              children: [
+                                // Left spacer (same width as status pill area)
+                                const SizedBox(width: 90),
+                                Expanded(
+                                  child: FutureBuilder<String>(
+                                    future: getUserName(bill.paidBy),
+                                    builder: (ctx, snap) {
+                                      final name = snap.data ?? '...';
+                                      return Center(
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            CircleAvatar(
+                                              radius: 18,
+                                              backgroundColor: _pinkDark,
+                                              child: Text(
+                                                name.isNotEmpty
+                                                    ? name[0].toUpperCase()
+                                                    : '?',
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: _textPri,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Paid by',
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: 12,
+                                                    color: _textSec,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  name,
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: _textPri,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Text(name,
-                                          style: GoogleFonts.poppins(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                              color: _textPri)),
-                                    ],
-                                  );
-                                },
-                              ),
-                              const Spacer(),
-                              if (settled)
-                                _StatusPill(
-                                    label: 'Settled', color: _green)
-                              else if (iAmPayer)
-                                _StatusPill(
-                                    label: 'Waiting', color: _pink)
-                              else if (iAmDebtor && !mySharePaid)
-                                _StatusPill(
-                                    label: 'You owe',
-                                    color: Colors.orangeAccent)
-                              else if (iAmDebtor && mySharePaid)
-                                _StatusPill(
-                                    label: 'You paid', color: _green),
-                            ],
+                                      );
+                                    },
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 90,
+                                  child: Align(
+                                    alignment: Alignment.centerRight,
+                                    child: settled
+                                        ? _StatusPill(
+                                            label: 'Settled',
+                                            color: _green,
+                                          )
+                                        : iAmPayer
+                                            ? _StatusPill(
+                                                label: 'Waiting',
+                                                color: _pink,
+                                              )
+                                            : iAmDebtor && !mySharePaid
+                                                ? _StatusPill(
+                                                    label: 'You owe',
+                                                    color: Colors.orangeAccent,
+                                                  )
+                                                : iAmDebtor && mySharePaid
+                                                    ? _StatusPill(
+                                                        label: 'You paid',
+                                                        color: _green,
+                                                      )
+                                                    : const SizedBox.shrink(),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-
               // ── Layer 4: border overlay ───────────────────────────
               Positioned.fill(
                 child: Container(
@@ -530,8 +565,10 @@ class _BillCard extends StatelessWidget {
               ),
             ],
           ),
+        ]
         ),
       ),
+      )
     );
   }
 }

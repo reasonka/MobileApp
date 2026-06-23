@@ -443,79 +443,88 @@ class _BillCard extends StatelessWidget {
                     ),
                   ),
 
-                  // ── Layer 3: BillSubPanel bottom strip ────────────
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                        bottom: Radius.circular(18)),
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: Image.asset(
-                            'assets/images/BillSubPanel.png',
-                            fit: BoxFit.fill,
-                          ),
-                        ),
-                        Padding(
-                          padding:
-                              const EdgeInsets.fromLTRB(14, 10, 14, 14),
-                          child: Row(
-                            children: [
-                              FutureBuilder<String>(
-                                future: getUserName(bill.paidBy),
-                                builder: (ctx, snap) {
-                                  final name = snap.data ?? '…';
-                                  return Row(
-                                    children: [
-                                      Text('Paid by',
-                                          style: GoogleFonts.poppins(
-                                              fontSize: 12,
-                                              color: _textSec)),
-                                      const SizedBox(width: 6),
-                                      CircleAvatar(
-                                        radius: 12,
-                                        backgroundColor: _pinkDark,
-                                        child: Text(
-                                          name.isNotEmpty
-                                              ? name[0].toUpperCase()
-                                              : '?',
-                                          style: GoogleFonts.poppins(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w700,
-                                              color: _textPri),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Text(name,
-                                          style: GoogleFonts.poppins(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                              color: _textPri)),
-                                    ],
-                                  );
-                                },
-                              ),
-                              const Spacer(),
-                              if (settled)
-                                _StatusPill(
-                                    label: 'Settled', color: _green)
-                              else if (iAmPayer)
-                                _StatusPill(
-                                    label: 'Waiting', color: _pink)
-                              else if (iAmDebtor && !mySharePaid)
-                                _StatusPill(
-                                    label: 'You owe',
-                                    color: Colors.orangeAccent)
-                              else if (iAmDebtor && mySharePaid)
-                                _StatusPill(
-                                    label: 'You paid', color: _green),
-                            ],
-                          ),
+                // ── Layer 3: BillSubPanel bottom strip ────────────
+ClipRRect(
+  borderRadius: const BorderRadius.vertical(
+      bottom: Radius.circular(18)),
+  child: Stack(
+    children: [
+      Positioned.fill(
+        child: Image.asset(
+          'assets/images/BillSubPanel.png',
+          fit: BoxFit.fill,
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+        child: Row(
+          children: [
+            // ── Left balance spacer ───────────────
+            SizedBox(
+              width: 80,
+              child: const SizedBox.shrink(),
+            ),
+            // ── Centered paid by ──────────────────
+            Expanded(
+              child: FutureBuilder<String>(
+  future: getUserName(bill.paidBy),
+  builder: (ctx, snap) {
+    final name = snap.data ?? '…';
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'Paid by',
+          style: GoogleFonts.poppins(
+              fontSize: 12, fontWeight: FontWeight.w700, color: const Color.fromARGB(255, 255, 255, 255)),
+        ),
+        const SizedBox(width: 8),
+        CircleAvatar(
+          radius: 18,
+          backgroundColor: _pinkDark,
+          child: Text(
+            name.isNotEmpty ? name[0].toUpperCase() : '?',
+            style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: _textPri),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          name,
+          style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: _textPri),
                         ),
                       ],
-                    ),
-                  ),
-                ],
+                    );
+                },
               ),
+            ),
+            // ── Status pill right ─────────────────
+            SizedBox(
+              width: 80,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: settled
+                    ? _StatusPill(label: 'Settled', color: _green)
+                    : iAmPayer
+                        ? _StatusPill(label: 'Waiting', color: _pink)
+                        : iAmDebtor && !mySharePaid
+                            ? _StatusPill(label: 'You owe', color: Colors.orangeAccent)
+                            : iAmDebtor && mySharePaid
+                                ? _StatusPill(label: 'You paid', color: _green)
+                                : const SizedBox.shrink(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
+  ),
+),
 
               // ── Layer 4: border overlay ───────────────────────────
               Positioned.fill(
@@ -535,8 +544,10 @@ class _BillCard extends StatelessWidget {
               ),
             ],
           ),
+        ]
         ),
       ),
+    )
     );
   }
 }
