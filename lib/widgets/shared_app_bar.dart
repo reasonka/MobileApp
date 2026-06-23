@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/firestore_service.dart';
 import '../screens/settings/settings_screen.dart';
+import '../screens/home/home_widgets.dart';
+import '../screens/profile_screen.dart';
 
 class HouseAppBar extends StatefulWidget {
   final String houseId;
   final String currentUserId;
   final String weekRangeLabel;
+  final String? houseName;
+  final int? avatarIndex;
   final VoidCallback? onSettingsTap;
 
   const HouseAppBar({
@@ -14,6 +19,8 @@ class HouseAppBar extends StatefulWidget {
     required this.houseId,
     required this.currentUserId,
     required this.weekRangeLabel,
+    this.houseName,
+    this.avatarIndex,
     this.onSettingsTap,
   });
 
@@ -26,16 +33,19 @@ class _HouseAppBarState extends State<HouseAppBar> {
   String _houseName = '';
   int _avatarIndex = 0;
 
-  static const List<List<Color>> _gradients = [
-    [Color(0xFF6A1B9A), Color(0xFFE040FB)],
-    [Color(0xFF1B5E20), Color(0xFF00C9A7)],
-    [Color(0xFF1A237E), Color(0xFF448AFF)],
-  ];
-
   @override
   void initState() {
     super.initState();
-    _load();
+    if (widget.houseName != null) _houseName = widget.houseName!;
+    if (widget.avatarIndex != null) _avatarIndex = widget.avatarIndex!;
+    if (widget.houseName == null || widget.avatarIndex == null) _load();
+  }
+
+  @override
+  void didUpdateWidget(HouseAppBar old) {
+    super.didUpdateWidget(old);
+    if (widget.houseName != null) _houseName = widget.houseName!;
+    if (widget.avatarIndex != null) _avatarIndex = widget.avatarIndex!;
   }
 
   Future<void> _load() async {
@@ -47,20 +57,18 @@ class _HouseAppBarState extends State<HouseAppBar> {
     );
     if (mounted) {
       setState(() {
-        _houseName = (house?['name'] as String?) ?? 'Our House';
-        _avatarIndex = me['avatarIndex'] as int? ?? 0;
+        if (widget.houseName == null)
+          _houseName = (house?['name'] as String?) ?? 'Our House';
+        if (widget.avatarIndex == null)
+          _avatarIndex = me['avatarIndex'] as int? ?? 0;
       });
     }
   }
 
- // Replace the title, leading, and actions with this approach:
-
-@override
+ @override
 Widget build(BuildContext context) {
-  final List<Color> colors = _gradients[_avatarIndex.clamp(0, 2)];
   final double statusBarHeight = MediaQuery.of(context).padding.top;
-  final double toolbarHeight = 70.0;
-
+  final double toolbarHeight = _houseName.length > 14 ? 75.0 : 30.0;
 
   return SliverAppBar(
     pinned: true,
@@ -69,94 +77,97 @@ Widget build(BuildContext context) {
     elevation: 0,
     scrolledUnderElevation: 0,
     toolbarHeight: toolbarHeight + statusBarHeight,
-    // Remove title, leading, actions entirely — put everything in flexibleSpace
-    flexibleSpace: Stack(
-      children: [
-        // ── Background image ──────────────────────────────────────────
-        Positioned.fill(
-          child: Image.asset(
-            'assets/images/TopPanel.png',
-            fit: BoxFit.fill,
-          ),
-        ),
-
-        // ── Avatar (leading) ──────────────────────────────────────────
-        Positioned(
-          left: 16,
-          top: statusBarHeight + (toolbarHeight - 42) / 2,
-          child: Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: colors,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+    flexibleSpace: LayoutBuilder(
+      builder: (context, constraints) {
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/TopPanel.png',
+                fit: BoxFit.fill,
               ),
             ),
-            child: const Icon(Icons.pets_rounded, color: Colors.white, size: 19),
-          ),
-        ),
 
-        // ── House name (centered) ─────────────────────────────────────
-        Positioned(
-          left: 70,
-          right: 70,
-          top: statusBarHeight,
-          height: toolbarHeight,
-          child: Center(
-            child: _houseName.isEmpty
-                ? const SizedBox.shrink()
-                : ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [Color(0xFFE040FB), Color(0xFFFFD54F)],
-                    ).createShader(bounds),
-                    child: Text(
-                      _houseName.toUpperCase(),
-                      maxLines: 2,
-                      overflow: TextOverflow.visible,
-                      textAlign: TextAlign.center,
-                      softWrap: true,
-                      style: GoogleFonts.poppins(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        letterSpacing: 2,
-                        height: 1.2,
-                      ),
+            Positioned(
+              left: 0,
+              right: 0,
+              top: statusBarHeight,
+              bottom: 0,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(width: 16),
+                  GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProfileScreen(
+                              userId: widget.currentUserId,
+                              houseId: widget.houseId,
+                            ),
+                          ),
+                        );
+                      },
+                      child: HomeCatAvatar(avatarIndex: _avatarIndex, size: 42),
+                    ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _houseName.isEmpty
+                        ? const SizedBox.shrink()
+                        : ShaderMask(
+                            shaderCallback: (bounds) =>
+                                HomeTokens.houseTitleGradient.createShader(bounds),
+                            child: Text(
+                              _houseName.toUpperCase(),
+                              textAlign: TextAlign.center,
+                              maxLines: 3,
+                              softWrap: true,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                fontSize: _houseName.length > 14
+                                    ? _houseName.length > 20
+                                        ? 13.0
+                                        : 30.0
+                                    : 40.0,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing:
+                                    _houseName.length > 14 ? -0.5 : -2.0,
+                                height: 1.1,
+                              ),
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: widget.onSettingsTap ??
+                        () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SettingsScreen(
+                                  userId: widget.currentUserId,
+                                  houseId: widget.houseId,
+                                ),
+                              ),
+                            ),
+                    child: SvgPicture.asset(
+                      'assets/images/home/settings.svg',
+                      width: 40,
+                      height: 40,
                     ),
                   ),
-          ),
-        ),
-
-        // ── Settings icon (trailing) ──────────────────────────────────
-        Positioned(
-          right: 12,
-          top: statusBarHeight + (toolbarHeight - 32) / 2,
-          child: GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => SettingsScreen(
-                  userId: widget.currentUserId,
-                  houseId: widget.houseId,
-                ),
+                  const SizedBox(width: 12),
+                ],
               ),
             ),
-            child: Image.asset(
-              'assets/images/Settings.png',
-              width: 32,
-              height: 32,
-            ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     ),
     bottom: const PreferredSize(
       preferredSize: Size.fromHeight(0),
       child: SizedBox.shrink(),
     ),
   );
-}
-}
+}}

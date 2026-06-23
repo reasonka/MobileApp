@@ -292,7 +292,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
             margin: const EdgeInsets.all(1),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: (hasEvents && !isPast) ? _pink : Colors.transparent,
+              color: Colors.transparent,
+              image: (hasEvents && !isPast)
+                  ? const DecorationImage(
+                      image: AssetImage('assets/images/bills/OweYou.png'),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
               border: isSelected ? Border.all(color: _pink, width: 2) : null,
             ),
             alignment: Alignment.center,

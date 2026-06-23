@@ -5,7 +5,7 @@ import '../../models/chore_model.dart';
 import '../../models/note_model.dart';
 import '../../services/firestore_service.dart';
 import '../../theme.dart';
-import 'home_app_bar.dart';
+import '../../widgets/shared_app_bar.dart';
 import 'home_widgets.dart';
 import 'new_chore_sheet.dart';
 import 'new_note_sheet.dart';
@@ -118,13 +118,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   CustomScrollView(
                       controller: _scrollCtrl,
                       slivers: [
-                        HomeSliverAppBar(
+                        HouseAppBar(
                           houseId: widget.houseId,
                           currentUserId: widget.userId,
-                          houseName: _houseName,
                           weekRangeLabel: _weekRangeLabel,
-                          avatarIndex:
-                              _myMember['avatarIndex'] as int? ?? 0,
+                          houseName: _houseName,
+                          avatarIndex: _myMember['avatarIndex'] as int? ?? 0,
                         ),
                         if (pendingVotes.isNotEmpty)
                           SliverToBoxAdapter(

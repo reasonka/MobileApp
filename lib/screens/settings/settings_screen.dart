@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import '../profile_screen.dart';
 
 import 'settings_widgets.dart';
 
@@ -83,7 +84,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           icon: 'privacy',
           onTap: () => _toast('Privacy'),
         ),
-        _MenuItem(label: 'Theme', icon: 'theme', onTap: _showThemeSheet),
+        _MenuItem(label: 'Theme', icon: 'theme', onTap: () => _toast('Theme')), 
         _MenuItem(label: 'Help', icon: 'help', onTap: () => _toast('Help')),
       ];
 
@@ -94,15 +95,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
           .toList();
 
   void _toast(String label) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(
-        '$label — coming soon',
-        style: GoogleFonts.poppins(fontSize: 13),
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    content: Text(
+      '$label — coming soon',
+      textAlign: TextAlign.center,         // ← center text
+      style: GoogleFonts.poppins(
+        fontSize: 18,                      // ← bigger text
+        color: Colors.white,
       ),
-      backgroundColor: _card,
-      duration: const Duration(seconds: 2),
-    ));
-  }
+    ),
+    backgroundColor: _card,
+    duration: const Duration(seconds: 2),
+    padding: const EdgeInsets.symmetric(  // ← bigger popup
+      horizontal: 24,
+      vertical: 20,
+    ),
+    behavior: SnackBarBehavior.floating,  // ← floating looks better when bigger
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+    ),
+  ));
+}
 
   void _showProfileQR() {
     showModalBottomSheet(
@@ -222,70 +235,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showThemeSheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: _card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(child: _dragHandle()),
-            const SizedBox(height: 16),
-            Text(
-              'Theme',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 20),
-            _themeOption(Icons.dark_mode_outlined, 'Dark', true),
-            _themeOption(Icons.light_mode_outlined, 'Light', false),
-            _themeOption(Icons.phone_android_outlined, 'System default', false),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _themeOption(IconData icon, String label, bool selected) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: selected ? _pink.withOpacity(0.12) : const Color(0xFF1D1D35),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: selected ? _pink.withOpacity(0.4) : const Color(0xFF2E2E50),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: selected ? _pink : _textSec, size: 20),
-          const SizedBox(width: 14),
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: selected ? _pink : Colors.white,
-            ),
-          ),
-          const Spacer(),
-          if (selected)
-            const Icon(Icons.check_rounded, color: _pink, size: 18),
-        ],
-      ),
-    );
-  }
-
   void _confirmLogout() {
     showDialog(
       context: context,
@@ -399,14 +348,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           children: [
             const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: SvgPicture.asset(
-                  SettingsTokens.iconAsset('back'),
-                  width: 13,
-                  height: 25,
+            Align(
+              alignment: Alignment.centerLeft,
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: SvgPicture.asset(
+                    SettingsTokens.iconAsset('back'),
+                    width: 13,
+                    height: 25,
+                  ),
                 ),
               ),
             ),
@@ -453,60 +405,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 22),
             GestureDetector(
-              onTap: _showProfileQR,
-              child: Row(
-                children: [
-                  Container(
-                    width: 61,
-                    height: 61,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                      boxShadow: const [SettingsTokens.cardShadow],
-                    ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        SettingsTokens.avatarAsset(_avatarIndex),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _userName.isEmpty ? '...' : _userName,
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          'member of "$_houseName"',
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w300,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: _showProfileQR,
-                    child: Image.asset(
-                      'assets/images/settings/profile_qr_icon.png',
-                      width: 42,
-                      height: 42,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                ],
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProfileScreen(
+          userId: widget.userId,
+          houseId: widget.houseId,
+        ),
+      ),
+    );
+  },
+  child: Row(
+    children: [
+      Container(
+        width: 61,
+        height: 61,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: const [SettingsTokens.cardShadow],
+        ),
+        child: ClipOval(
+          child: Image.asset(
+            SettingsTokens.avatarAsset(_avatarIndex),
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+      const SizedBox(width: 14),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _userName.isEmpty ? '...' : _userName,
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
               ),
             ),
+            Text(
+              'member of "$_houseName"',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w300,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+      // Keep this specific icon button for the QR sheet
+      GestureDetector(
+        onTap: _showProfileQR, 
+        child: Image.asset(
+          'assets/images/settings/profile_qr_icon.png',
+          width: 42,
+          height: 42,
+          fit: BoxFit.contain,
+        ),
+      ),
+    ],
+  ),
+),
             const SizedBox(height: 18),
             if (_filtered.isEmpty)
               Padding(
