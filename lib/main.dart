@@ -1,4 +1,7 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -97,25 +100,56 @@ const _loadingScaffold = Scaffold(
   ),
 );
 
-const Color _bg        = Color(0xFF0D0D1A);
-const Color _navBg     = Color(0xFF14142A);
-const Color _navBorder = Color(0xFF2E2E50);
-const Color _pink      = Color(0xFFE040FB);
-const Color _inactive  = Color(0xFF6B6892);
+const Color _bg = Color(0xFF0D0D1A);
 
 // ─────────────────────────────────────────────
 // NAV ITEMS
 // ─────────────────────────────────────────────
 
+/// Figma bottom-nav icon sizes (node 88:297) — inactive vs active (centre tab).
 class _NavItem {
-  final String imagePath;
-  const _NavItem({required this.imagePath});
+  final String activeAsset;
+  final String inactiveAsset;
+  final double inactiveW;
+  final double inactiveH;
+  final double activeW;
+  final double activeH;
+
+  const _NavItem({
+    required this.activeAsset,
+    required this.inactiveAsset,
+    required this.inactiveW,
+    required this.inactiveH,
+    required this.activeW,
+    required this.activeH,
+  });
 }
 
 const List<_NavItem> _navItems = [
-  _NavItem(imagePath: 'assets/images/homeIcon.png'),
-  _NavItem(imagePath: 'assets/images/coinIcon.png'),
-  _NavItem(imagePath: 'assets/images/calendarIcon.png'),
+  _NavItem(
+    activeAsset: 'assets/images/nav/home_active.svg',
+    inactiveAsset: 'assets/images/nav/home_inactive.svg',
+    inactiveW: 49,
+    inactiveH: 49,
+    activeW: 73,
+    activeH: 58,
+  ),
+  _NavItem(
+    activeAsset: 'assets/images/nav/coin_active.svg',
+    inactiveAsset: 'assets/images/nav/coin_inactive.svg',
+    inactiveW: 48,
+    inactiveH: 48,
+    activeW: 58,
+    activeH: 58,
+  ),
+  _NavItem(
+    activeAsset: 'assets/images/nav/calendar_active.svg',
+    inactiveAsset: 'assets/images/nav/calendar_inactive.svg',
+    inactiveW: 43,
+    inactiveH: 46,
+    activeW: 55,
+    activeH: 58,
+  ),
 ];
 
 // ─────────────────────────────────────────────
@@ -261,10 +295,12 @@ class _BeltNavBar extends StatefulWidget {
 class _BeltNavBarState extends State<_BeltNavBar>
     with SingleTickerProviderStateMixin {
 
+  // Figma nav panel: 360×75, r=30, three 120px slots
   static const double slotW = 120.0;
-  static const double slotH = 70.0;        // taller slots
-  static const double _barW = slotW * 3 + 40;
-  static const double _barH = slotH + 24;  // taller bar
+  static const double slotH = 58.0;
+  static const double _barW = slotW * 3;
+  static const double _barH = 75.0;
+  static const double _barRadius = 30.0;
 
   late final AnimationController _ctrl;
   late Animation<double> _anim;
@@ -337,74 +373,76 @@ class _BeltNavBarState extends State<_BeltNavBar>
         child: GestureDetector(
           onTapUp: _onTap,
           child: Container(
-            margin: const EdgeInsets.fromLTRB(0, 0, 0, 14),
-            width:  _barW,
+            margin: const EdgeInsets.only(bottom: 14),
+            width: _barW,
             height: _barH,
             decoration: BoxDecoration(
-              image: const DecorationImage(
-                image: AssetImage('assets/images/BottomNavBG.png'),
-                fit: BoxFit.fill,
-              ),
-              borderRadius: BorderRadius.circular(40),
-              border: Border.all(color: _navBorder, width: 1),
+              borderRadius: BorderRadius.circular(_barRadius),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.45),
+                  color: Colors.black.withValues(alpha: 0.4),
                   blurRadius: 24,
                   offset: const Offset(0, 8),
                 ),
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(40),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-
-                  // ── Fixed center highlight pill ──────────
-                  // Container(
-                  //   width:  slotW,
-                  //   height: slotH,
-                  //   decoration: BoxDecoration(
-                  //     color: _pink.withValues(alpha: 0.18),
-                  //     borderRadius: BorderRadius.circular(24),
-                  //     border: Border.all(
-                  //       color: _pink.withValues(alpha: 0.55),
-                  //       width: 1.2,
-                  //     ),
-                  //   ),
-                  // ),
-
-                  // ── Sliding icon belt ────────────────────
-                  AnimatedBuilder(
-                    animation: _anim,
-                    builder: (_, __) {
-                      final double dx = _anim.value + (_barW / 2) - (slotW / 2);
-
-                      final List<Widget> slots = List.generate(30, (i) {
-                        final int idx    = i % n;
-                        final bool active = idx == widget.currentIndex;
-                        return _Slot(
-                          imagePath: _navItems[idx].imagePath,
-                          active: active,
-                        );
-                      });
-
-                      return Transform.translate(
-                        offset: Offset(dx, 0),
-                        child: OverflowBox(
-                          maxWidth: double.infinity,
-                          alignment: Alignment.centerLeft,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: slots,
-                          ),
-                        ),
-                      );
-                    },
+              borderRadius: BorderRadius.circular(_barRadius),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(_barRadius),
+                    color: const Color(0xFF161823).withValues(alpha: 0.42),
+                    gradient: RadialGradient(
+                      center: Alignment.center,
+                      radius: 1.1,
+                      colors: [
+                        const Color(0x33E3F6FF),
+                        const Color(0x1AD7D7D7),
+                        const Color(0x33161823),
+                      ],
+                      stops: const [0.0, 0.55, 1.0],
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.16),
+                      width: 1,
+                    ),
                   ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      AnimatedBuilder(
+                        animation: _anim,
+                        builder: (_, __) {
+                          final double dx =
+                              _anim.value + (_barW / 2) - (slotW / 2);
 
-                ],
+                          final List<Widget> slots = List.generate(30, (i) {
+                            final int idx = i % n;
+                            final bool active = idx == widget.currentIndex;
+                            return _Slot(
+                              item: _navItems[idx],
+                              active: active,
+                            );
+                          });
+
+                          return Transform.translate(
+                            offset: Offset(dx, 0),
+                            child: OverflowBox(
+                              maxWidth: double.infinity,
+                              alignment: Alignment.centerLeft,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: slots,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -419,33 +457,30 @@ class _BeltNavBarState extends State<_BeltNavBar>
 // ─────────────────────────────────────────────
 
 class _Slot extends StatelessWidget {
-  final String imagePath;
-  final bool   active;
-  const _Slot({required this.imagePath, required this.active});
+  final _NavItem item;
+  final bool active;
+
+  const _Slot({required this.item, required this.active});
 
   @override
   Widget build(BuildContext context) {
+    final w = active ? item.activeW : item.inactiveW;
+    final h = active ? item.activeH : item.inactiveH;
+
     return SizedBox(
-      width:  _BeltNavBarState.slotW,
+      width: _BeltNavBarState.slotW,
       height: _BeltNavBarState.slotH,
       child: Center(
-        child: AnimatedScale(
-          scale: active ? 2 : 1.0,
+        child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOutBack,
-          child: ColorFiltered(
-            colorFilter: active
-                ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
-                : ColorFilter.mode(
-                    Colors.white.withValues(alpha: 0.6),
-                    BlendMode.srcATop,
-                  ),
-            child: Image.asset(
-              imagePath,
-              width:  40,
-              height: 40,
-              fit: BoxFit.contain,
-            ),
+          width: w,
+          height: h,
+          child: SvgPicture.asset(
+            active ? item.activeAsset : item.inactiveAsset,
+            width: w,
+            height: h,
+            fit: BoxFit.contain,
           ),
         ),
       ),

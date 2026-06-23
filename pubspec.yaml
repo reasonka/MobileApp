@@ -68,9 +68,14 @@ flutter:
   assets:
     - assets/images/login/
     - assets/images/home/
+    - assets/images/home/group_pics/
+    - assets/images/home/group_pics/cats/
+    - assets/images/home/podium/
+    - assets/images/home/podium/characters/
     - assets/images/bills/
     - assets/images/calendar/
     - assets/images/settings/
+    - assets/images/nav/
     - assets/images/BottomNavBG.png
     - assets/images/homeIcon.png
     - assets/images/Settings.png

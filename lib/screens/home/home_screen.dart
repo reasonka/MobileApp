@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/chore_model.dart';
 import '../../models/note_model.dart';
 import '../../services/firestore_service.dart';
-import '../../widgets/shared_app_bar.dart';
 import '../../theme.dart';
+import 'home_app_bar.dart';
+import 'home_widgets.dart';
 import 'new_chore_sheet.dart';
 import 'new_note_sheet.dart';
 
@@ -20,9 +22,15 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _fs = FirestoreService();
+  final _scrollCtrl = ScrollController();
 
   List<Map<String, dynamic>> _members = []; // {userId, name, avatarIndex}
+  String _houseName = '';
+  String _inviteCode = '';
   bool _initialized = false;
+
+  static const double _fabBottomInset = 123; // nav margin + height + gap (Figma)
+  static const double _navReservedHeight = 89; // nav margin (14) + bar (75)
 
   @override
   void initState() {
@@ -30,11 +38,19 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadHouseData();
   }
 
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadHouseData() async {
-    await _fs.getHouseData(widget.houseId);
+    final house = await _fs.getHouseData(widget.houseId);
     final members = await _fs.getHouseMemberDetails(widget.houseId);
     if (mounted) {
       setState(() {
+        _houseName = (house?['name'] as String?) ?? 'Our House';
+        _inviteCode = (house?['inviteCode'] as String?) ?? '';
         _members = members;
         _initialized = true;
       });
@@ -65,13 +81,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     if (!_initialized) {
       return const Scaffold(
-        backgroundColor: AppColors.darkBg,
+        backgroundColor: HomeTokens.screenBg,
         body: Center(child: CircularProgressIndicator(color: AppColors.pink)),
       );
     }
 
+    final fabBottom = MediaQuery.paddingOf(context).bottom + _fabBottomInset;
+
     return Scaffold(
-      backgroundColor: AppColors.darkBg,
+      backgroundColor: HomeTokens.screenBg,
       body: StreamBuilder<List<ChoreModel>>(
         stream: _fs.choresStream(widget.houseId),
         builder: (context, choreSnap) {
@@ -81,7 +99,6 @@ class _HomeScreenState extends State<HomeScreen> {
               .toList()
             ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
-          // Chores I need to vote on (pending & I haven't voted yet)
           final pendingVotes = chores
               .where((c) =>
                   c.xpStatus == 'pending' &&
@@ -96,35 +113,57 @@ class _HomeScreenState extends State<HomeScreen> {
             builder: (context, noteSnap) {
               final notes = noteSnap.data ?? [];
 
-              return CustomScrollView(
-                slivers: [
-                  // ── Sticky header ──────────────────────────────────────────
-                  HouseAppBar(
-  houseId: widget.houseId,
-  currentUserId: widget.userId,
-  weekRangeLabel: _weekRangeLabel,
-),
-                  if (pendingVotes.isNotEmpty)
-                    SliverToBoxAdapter(
-                      child: _buildPendingVotesSection(pendingVotes),
+              return Stack(
+                children: [
+                  CustomScrollView(
+                      controller: _scrollCtrl,
+                      slivers: [
+                        HomeSliverAppBar(
+                          houseId: widget.houseId,
+                          currentUserId: widget.userId,
+                          houseName: _houseName,
+                          weekRangeLabel: _weekRangeLabel,
+                          avatarIndex:
+                              _myMember['avatarIndex'] as int? ?? 0,
+                        ),
+                        if (pendingVotes.isNotEmpty)
+                          SliverToBoxAdapter(
+                            child: _buildPendingVotesSection(pendingVotes),
+                          ),
+                        SliverToBoxAdapter(
+                          child: _buildUserChoreSection(myChores),
+                        ),
+                        SliverToBoxAdapter(
+                          child: housemates.isNotEmpty
+                              ? _buildHousematesSection(housemates, chores)
+                              : _buildHousematePlaceholders(),
+                        ),
+                        SliverToBoxAdapter(
+                          child: _buildLeaderboard(chores),
+                        ),
+                        SliverToBoxAdapter(
+                          child: _buildNotesSection(notes),
+                        ),
+                        const SliverToBoxAdapter(
+                          child: SizedBox(height: 180),
+                        ),
+                      ],
                     ),
-                  SliverToBoxAdapter(
-                    child: _buildUserChoreSection(myChores),
+                  const HomeBottomScrollFade(),
+                  HomeNoteSwipeUpLayer(
+                    navReservedHeight: _navReservedHeight,
+                    onTriggered: _openNewNote,
                   ),
-                  if (housemates.isNotEmpty)
-                    SliverToBoxAdapter(
-                      child: _buildHousematesSection(housemates, chores),
+                  Positioned(
+                    left: HomeTokens.horizontalPadding,
+                    bottom: fabBottom,
+                    child: HomeGlassActionButton(
+                      label: 'New chore',
+                      width: 171,
+                      onTap: () =>
+                          _onNewChorePressed(housemates, myChores),
                     ),
-                  SliverToBoxAdapter(
-                    child: _buildNewChoreButton(housemates, myChores),
                   ),
-                  SliverToBoxAdapter(
-                    child: _buildLeaderboard(chores),
-                  ),
-                  SliverToBoxAdapter(
-                    child: _buildNotesSection(notes),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 120)),
                 ],
               );
             },
@@ -138,7 +177,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildPendingVotesSection(List<ChoreModel> pending) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      padding: const EdgeInsets.fromLTRB(
+        HomeTokens.horizontalPadding,
+        20,
+        HomeTokens.horizontalPadding,
+        0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -324,20 +368,31 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── User chore card ───────────────────────────────────────────────────────────
 
   Widget _buildUserChoreSection(List<ChoreModel> myChores) {
+    const avatarSize = 50.0;
+    const avatarOverlap = 15.0; // Figma AIDYNCHORE — avatar sits into card top
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      child: Column(
+      padding: const EdgeInsets.fromLTRB(
+        HomeTokens.horizontalPadding,
+        12,
+        HomeTokens.horizontalPadding,
+        0,
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
         children: [
+          Padding(
+            padding: EdgeInsets.only(top: avatarSize - avatarOverlap),
+            child: _ChoreCard(
+              chores: myChores,
+              isOwner: true,
+              onToggle: (chore) => _toggleChore(chore),
+            ),
+          ),
           _AvatarCircle(
             avatarIndex: _myMember['avatarIndex'] as int? ?? 0,
-            size: 56,
-          ),
-          const SizedBox(height: 8),
-          _ChoreCard(
-            chores: myChores,
-            isOwner: true,
-            onToggle: (chore) =>
-                _fs.toggleChore(chore.choreId, !chore.completed),
+            size: avatarSize,
           ),
         ],
       ),
@@ -346,12 +401,49 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ── Housemates row ────────────────────────────────────────────────────────────
 
+  Widget _buildHousematePlaceholders() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        HomeTokens.horizontalPadding,
+        12,
+        HomeTokens.horizontalPadding,
+        0,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: HomeHousemateInvitePlaceholder(
+                onTap: _showFamilyInviteQr,
+              ),
+            ),
+          ),
+          Expanded(
+            child: HomeHousemateInvitePlaceholder(
+              onTap: _showFamilyInviteQr,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFamilyInviteQr() {
+    HomeFamilyInviteSheet.show(context, _inviteCode);
+  }
+
   Widget _buildHousematesSection(
     List<Map<String, dynamic>> housemates,
     List<ChoreModel> allChores,
   ) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      padding: const EdgeInsets.fromLTRB(
+        HomeTokens.horizontalPadding,
+        12,
+        HomeTokens.horizontalPadding,
+        0,
+      ),
       child: Row(
         children: housemates.take(3).map((m) {
           final uid = m['userId'] as String;
@@ -397,6 +489,38 @@ class _HomeScreenState extends State<HomeScreen> {
           color: Colors.transparent,
           child: _HousemateOverlay(member: member, chores: chores),
         ),
+      ),
+    );
+  }
+
+  Future<void> _toggleChore(ChoreModel chore) async {
+    try {
+      await _fs.toggleChore(chore.choreId, !chore.completed);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Could not update chore',
+            style: GoogleFonts.poppins(),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _openNewNote() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.cardBg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => NewNoteSheet(
+        userId: widget.userId,
+        houseId: widget.houseId,
+        authorName: _myMember['name'] as String? ?? '',
       ),
     );
   }
@@ -475,49 +599,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildNewChoreButton(
-    List<Map<String, dynamic>> housemates,
-    List<ChoreModel> myChores,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: GestureDetector(
-          onTap: () => _onNewChorePressed(housemates, myChores),
-          child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColors.cardBg,
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: Colors.white12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.add_circle_outline,
-                    color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  'New chore',
-                  style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ── Leaderboard ───────────────────────────────────────────────────────────────
-
   Widget _buildLeaderboard(List<ChoreModel> chores) {
-    // Calculate XP from completed chores this week
     final xpMap = <String, int>{};
     for (final c in chores) {
       if (c.completed) {
@@ -533,25 +615,27 @@ class _HomeScreenState extends State<HomeScreen> {
       });
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 32, 20, 0),
+      padding: const EdgeInsets.fromLTRB(
+        HomeTokens.horizontalPadding,
+        32,
+        HomeTokens.horizontalPadding,
+        0,
+      ),
       child: Column(
         children: [
-          // Podium
-          if (ranked.isNotEmpty) _buildPodium(ranked, xpMap),
-          const SizedBox(height: 20),
-          // XP list card
+          Center(
+            child: SizedBox(
+              width: MediaQuery.sizeOf(context).width *
+                  HomeTokens.podiumWidthFraction,
+              child: HomePodium(rankedMembers: ranked.take(3).toList()),
+            ),
+          ),
+          const SizedBox(height: 16),
           Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF3D1370).withOpacity(0.7),
-                  const Color(0xFF7B2DBD).withOpacity(0.5),
-                ],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
+              gradient: HomeTokens.leaderboardListGradient,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.10)),
+              boxShadow: const [HomeTokens.cardShadow],
             ),
             child: Column(
               children: ranked.asMap().entries.map((entry) {
@@ -565,18 +649,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 14),
+                          horizontal: 16, vertical: 8),
                       child: Row(
                         children: [
                           _AvatarCircle(
                             avatarIndex: m['avatarIndex'] as int? ?? 0,
-                            size: 38,
+                            size: 40,
                           ),
-                          const SizedBox(width: 14),
+                          const SizedBox(width: 12),
                           Text(
                             m['name'] as String? ?? '',
                             style: GoogleFonts.poppins(
-                                fontSize: 15,
+                                fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white),
                           ),
@@ -584,9 +668,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           Text(
                             '$xp XP',
                             style: GoogleFonts.poppins(
-                                fontSize: 14,
+                                fontSize: 13,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.pink),
+                                color: Colors.white),
                           ),
                         ],
                       ),
@@ -604,167 +688,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPodium(
-      List<Map<String, dynamic>> ranked, Map<String, int> xpMap) {
-    // Show up to 3 on the podium — heights: 2nd, 1st, 3rd
-    final order = <int>[]; // indices into ranked to display left→right
-    if (ranked.length == 1) {
-      order.add(0);
-    } else if (ranked.length == 2) {
-      order.addAll([1, 0]);
-    } else {
-      order.addAll([1, 0, 2]); // 2nd, 1st, 3rd
-    }
-
-    final podiumHeights = [80.0, 110.0, 60.0]; // left, center, right
-    final rankLabels = ['2nd', '1st', '3rd'];
-
-    return SizedBox(
-      height: 180,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(order.length, (slot) {
-          final memberIdx = order[slot];
-          if (memberIdx >= ranked.length) return const SizedBox(width: 80);
-          final m = ranked[memberIdx];
-          final uid = m['userId'] as String;
-          final xp = xpMap[uid] ?? 0;
-          final podH = podiumHeights[slot];
-
-          return SizedBox(
-            width: 100,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  m['name'] as String? ?? '',
-                  style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 4),
-                // TODO: Replace with Canva cat image: Image.asset('assets/images/cat_${m['avatarIndex']}.png')
-                _AvatarCircle(
-                  avatarIndex: m['avatarIndex'] as int? ?? 0,
-                  size: slot == 1 ? 58 : 46,
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  height: podH,
-                  width: 80,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: slot == 1
-                          ? [AppColors.pink, const Color(0xFF7B2DBD)]
-                          : [
-                              const Color(0xFF3D1370),
-                              const Color(0xFF5A2490),
-                            ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                    borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(10)),
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          rankLabels[slot],
-                          style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white70),
-                        ),
-                        Text(
-                          '$xp XP',
-                          style: GoogleFonts.poppins(
-                              fontSize: 10,
-                              color: Colors.white54),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }),
-      ),
-    );
-  }
-
-  // ── Notes section ─────────────────────────────────────────────────────────────
-
   Widget _buildNotesSection(List<NoteModel> notes) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 32, 20, 0),
+      padding: const EdgeInsets.fromLTRB(
+        HomeTokens.horizontalPadding,
+        32,
+        HomeTokens.horizontalPadding,
+        0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // TODO: Replace placeholder below with your Canva cat illustration:
-          //   Image.asset('assets/images/cat_banner.png', width: double.infinity, fit: BoxFit.fitWidth)
-          Container(
-            width: double.infinity,
-            height: 120,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF3D1370).withOpacity(0.5),
-                  const Color(0xFF0D3B2E).withOpacity(0.5),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Center(
-              child: Icon(Icons.pets_rounded, color: Colors.white24, size: 56),
-            ),
-          ),
-          const SizedBox(height: 20),
-          // New note button
-          GestureDetector(
-            onTap: () => showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: AppColors.cardBg,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              builder: (_) => NewNoteSheet(
-                userId: widget.userId,
-                houseId: widget.houseId,
-                authorName: _myMember['name'] as String? ?? '',
-              ),
-            ),
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.cardBg,
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.white12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.add_circle_outline,
-                      color: Colors.white, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'New note',
-                    style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          HomeGroupPic(members: _members),
           if (notes.isNotEmpty) ...[
             const SizedBox(height: 16),
             ...notes.map((n) => Padding(
@@ -790,31 +725,12 @@ class _AvatarCircle extends StatelessWidget {
 
   const _AvatarCircle({required this.avatarIndex, this.size = 40});
 
-  static const _gradients = [
-    [Color(0xFF6A1B9A), Color(0xFFE040FB)], // purple
-    [Color(0xFF1B5E20), Color(0xFF00C9A7)], // teal
-    [Color(0xFF1A237E), Color(0xFF448AFF)], // blue
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final colors = _gradients[avatarIndex.clamp(0, 2)];
-    // TODO: Replace with your Canva cat image:
-    //   ClipOval(child: Image.asset('assets/images/cat_$avatarIndex.png',
-    //       width: size, height: size, fit: BoxFit.cover))
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: colors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Icon(Icons.pets_rounded,
-          color: Colors.white, size: size * 0.5),
+    return HomeCatAvatar(
+      avatarIndex: avatarIndex,
+      size: size,
+      borderWidth: size >= 40 ? 2 : 1.5,
     );
   }
 }
@@ -871,16 +787,9 @@ class _ChoreCard extends StatelessWidget {
   }
 
   BoxDecoration _cardDecoration() => BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF3D1370).withOpacity(0.75),
-            const Color(0xFF7B2DBD).withOpacity(0.55),
-          ],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
+        gradient: HomeTokens.mainChoreGradient,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.10)),
+        boxShadow: const [HomeTokens.cardShadow],
       );
 
   Widget _choreRow(ChoreModel left, ChoreModel? right, BuildContext ctx) {
@@ -930,6 +839,7 @@ class _ChoreCard extends StatelessWidget {
           ),
         ),
         GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: canToggle ? () => onToggle!(chore) : null,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
@@ -946,7 +856,11 @@ class _ChoreCard extends StatelessWidget {
                   : Colors.transparent,
             ),
             child: chore.completed
-                ? const Icon(Icons.check, size: 14, color: AppColors.pink)
+                ? SvgPicture.asset(
+                    'assets/images/home/checkmark.svg',
+                    width: 14,
+                    height: 14,
+                  )
                 : null,
           ),
         ),
@@ -984,9 +898,9 @@ class _HousemateCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.10)),
+          gradient: HomeTokens.memberPanelGradient,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [HomeTokens.cardShadow],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
