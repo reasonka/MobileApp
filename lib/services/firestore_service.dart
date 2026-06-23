@@ -125,6 +125,7 @@ Future<void> updateEvent({
       .orderBy('createdAt', descending: true)
       .snapshots()
       .map((s) => s.docs.map(BillModel.fromFirestore).toList());
+  
 
   Future<void> addBill({
     required double amount,
@@ -163,6 +164,13 @@ Future<void> updateBillPayer({
   required String newPayerId,
 }) =>
     _db.collection('bills').doc(billId).update({'paidBy': newPayerId});
+
+    Future<void> updateBillAmount({
+  required String billId,
+  required double newAmount,
+}) =>
+    _db.collection('bills').doc(billId).update({'amount': newAmount});
+    
 
 Future<List<double>> getBalances(String houseId, String currentUserId) async {
   final snap = await _db

@@ -80,7 +80,8 @@ flutter:
     - assets/images/BillMainPanel.png
     - assets/images/BillSubPanel.png
     - assets/images/bills/plus_sign.svg
-    
+    - assets/images/bills/YouOwe.png
+    - assets/images/bills/OweYou.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
