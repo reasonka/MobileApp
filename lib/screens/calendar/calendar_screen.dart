@@ -6,6 +6,7 @@ import '../../cards/add_event_sheet.dart';
 import '../../services/firestore_service.dart';
 import '../../widgets/shared_app_bar.dart';
 import '../../cards/event_card.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class CalendarScreen extends StatefulWidget {
   final String houseId;
@@ -175,13 +176,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
               // ── divider ────────────────────────────────────────────
               const SliverToBoxAdapter(
                 child: Divider(
-                    color: Color(0xFF1A1A2E), thickness: 1, height: 24),
+                    color: Color(0xFF1A1A2E), 
+                    thickness: 1, 
+                    height: 8, // CHANGED: Reduced from 24 to tighten spacing
+                ),
               ),
 
               // ── event panel: bounded + internally scrollable ───────
               SliverFillRemaining(
-                hasScrollBody: true,
-                child: _buildEventPanel(selectedEvents, sortedAllEvents),
+                hasScrollBody: false, // CHANGED: Ensures the column correctly fills remaining space
+                child: _buildEventPanel(context, selectedEvents, sortedAllEvents),
               ),
             ],
           );
@@ -265,47 +269,39 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
 
     return GridView.builder(
+      padding: EdgeInsets.zero,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: days.length + paddingCount,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 7,
-        childAspectRatio: 1.0,
-        mainAxisSpacing: 4,
+        childAspectRatio: 1.15, // CHANGED: Relaxed from 1.4 to un-squash the numbers
+        mainAxisSpacing: 0,
         crossAxisSpacing: 0,
       ),
       itemBuilder: (context, index) {
         if (index < paddingCount) return const SizedBox.shrink();
-
         final day = days[index - paddingCount];
         final isSelected = _isSameDay(day, _selectedDay);
         final hasEvents = events.any((e) => _isSameDay(e.date, day));
         final isPast = day.isBefore(today);
 
-        // FIXED Logic: 
-        // 1. Selection = Pink Circle with NO fill (Border)
-        // 2. Event = Pink Circle WITH fill
         return GestureDetector(
           onTap: () => setState(() => _selectedDay = day),
           child: Container(
-            margin: const EdgeInsets.all(3),
+            margin: const EdgeInsets.all(1),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              // Filled if upcoming event
               color: (hasEvents && !isPast) ? _pink : Colors.transparent,
-              // Pink ring if selected
-              border: isSelected 
-                  ? Border.all(color: _pink, width: 2) 
-                  : (isPast && hasEvents ? Border.all(color: Colors.white10) : null),
+              border: isSelected ? Border.all(color: _pink, width: 2) : null,
             ),
             alignment: Alignment.center,
             child: Text(
               '${day.day}',
               style: GoogleFonts.poppins(
                 color: isPast ? Colors.white24 : Colors.white,
-                fontSize: 14,
-                fontWeight: (hasEvents || isSelected) ? FontWeight.bold : FontWeight.normal,
-                decoration: (isPast && hasEvents) ? TextDecoration.lineThrough : null,
+                fontSize: 18,
+                fontWeight: (hasEvents || isSelected) ? FontWeight.bold : FontWeight.w500,
               ),
             ),
           ),
@@ -316,107 +312,94 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   // ── event panel ────────────────────────────────────────────────────────────
 
-  Widget _buildEventPanel(
-      List<EventModel> selectedEvents, List<EventModel> upcomingEvents) {
-    final selectedLabel = DateFormat('d MMM yyyy').format(_selectedDay);
+  // Inside _CalendarScreenState in calendar_screen.dart
+
+Widget _buildEventPanel(BuildContext context, List<EventModel> selectedEvents, List<EventModel> allEvents) {
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── fixed top section (button, selected-day events) ─────────
+        // 1. New Event Button
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GestureDetector(
-                onTap: () => AddEventSheet.show(
-                  context,
-                  widget.houseId,
-                  widget.currentUserId,
-                  initialDate: _selectedDay,
-                ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    color: const Color(0x33252B4C),
-                    border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.06)),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16), 
+          child: GestureDetector(
+            onTap: () => AddEventSheet.show(
+              context,
+              widget.houseId,
+              widget.currentUserId,
+              initialDate: _selectedDay,
+            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF111122),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SvgPicture.asset(
+                    'assets/images/calendar/plus_sign.svg',
+                    width: 20,
+                    height: 20,
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: const BoxDecoration(
-                            shape: BoxShape.circle, color: _pink),
-                        child: const Icon(Icons.add,
-                            color: Colors.white, size: 20),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'New event',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(width: 10),
+                  Text(
+                    'NEW EVENT',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.1,
+                    ),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(height: 20),
-              Text(
-                selectedEvents.isEmpty
-                    ? 'No events on $selectedLabel'
-                    : 'Events on $selectedLabel',
-                style: GoogleFonts.poppins(color: _dimText, fontSize: 13),
-              ),
-              const SizedBox(height: 12),
-              if (selectedEvents.isNotEmpty)
-                ...selectedEvents.map((e) => EventCard(
-                      event: e,
-                      houseId: widget.houseId,
-                      currentUserId: widget.currentUserId,
-                    )),
-              const SizedBox(height: 16),
-              Text(
-                'All events',
-                style: GoogleFonts.poppins(
-                  color: Colors.white70,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 10),
-            ],
+            ),
           ),
         ),
 
-        // ── bounded, independently scrollable list ───────────────────
-        Expanded(
-          child: upcomingEvents.isEmpty
-              ? Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Text('No events yet',
-                      style:
-                          GoogleFonts.poppins(color: _dimText, fontSize: 14)),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: upcomingEvents.length,
-                  itemBuilder: (context, i) => EventCard(
-                    event: upcomingEvents[i],
-                    houseId: widget.houseId,
-                    currentUserId: widget.currentUserId,
+        // 2. Dynamically Sized Main Panel (No Expanded widget!)
+      Container(
+          height: screenHeight * 0.40, // CHANGED: Reduced from 0.45 to balance the 50:50 screen ratio
+          width: double.infinity,
+          margin: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/images/calendar/EventMainPanel.png'),
+              fit: BoxFit.fill,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(25, 25, 25, 40), 
+            child: allEvents.isEmpty
+                ? Center(
+                    child: Text(
+                      'No events scheduled',
+                      style: GoogleFonts.poppins(color: const Color(0xFF555577)),
+                    ),
+                  )
+                : ClipRRect( // CHANGED: Added ClipRRect to mask the scrolling items
+                    borderRadius: BorderRadius.circular(30), // TWEAK THIS: Match this number to your PNG's curve
+                    child: ListView.builder(
+                      padding: EdgeInsets.zero, // CHANGED: Prevents Flutter from adding hidden scroll padding
+                      shrinkWrap: false,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: allEvents.length,
+                      itemBuilder: (context, i) {
+                        return EventCard(
+                          event: allEvents[i],
+                          houseId: widget.houseId,
+                          currentUserId: widget.currentUserId,
+                        );
+                      },
+                    ),
                   ),
-                ),
+          ),
         ),
+        const SizedBox(height: 20),
       ],
     );
   }
