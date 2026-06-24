@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import '../login/profile_setup_screen.dart';
 import '../profile_screen.dart';
 import '../../services/sound_service.dart';
+import 'settings_detail_screens.dart';
 import 'settings_widgets.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -67,25 +69,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  void _open(Widget screen, {bool refreshOnReturn = false}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => screen),
+    ).then((_) {
+      if (refreshOnReturn && mounted) _load();
+    });
+  }
+
   List<_MenuItem> get _menuItems => [
-        _MenuItem(label: 'Account', icon: 'account', onTap: () => _toast('Account')),
+        _MenuItem(
+          label: 'Account',
+          icon: 'account',
+          onTap: () => _open(
+            ProfileSetupScreen(
+              uid: widget.userId,
+              email: _auth.currentUser?.email ?? '',
+              isEditing: true,
+            ),
+            refreshOnReturn: true,
+          ),
+        ),
         _MenuItem(
           label: 'Notifications',
           icon: 'notifications',
-          onTap: () => _toast('Notifications'),
+          onTap: () => _open(const NotificationsSettingsScreen()),
         ),
         _MenuItem(
           label: 'Security',
           icon: 'security',
-          onTap: () => _toast('Security'),
+          onTap: () => _open(const SecuritySettingsScreen()),
         ),
         _MenuItem(
           label: 'Privacy',
           icon: 'privacy',
-          onTap: () => _toast('Privacy'),
+          onTap: () => _open(const PrivacySettingsScreen()),
         ),
-        _MenuItem(label: 'Theme', icon: 'theme', onTap: () => _toast('Theme')), 
-        _MenuItem(label: 'Help', icon: 'help', onTap: () => _toast('Help')),
+        _MenuItem(
+          label: 'Theme',
+          icon: 'theme',
+          onTap: () => _open(const ThemeSettingsScreen()),
+        ),
+        _MenuItem(
+          label: 'Help',
+          icon: 'help',
+          onTap: () => _open(const HelpSettingsScreen()),
+        ),
       ];
 
   List<_MenuItem> get _filtered => _searchQuery.isEmpty
@@ -510,7 +540,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               SettingsMenuRow(
                 iconAssetName: 'add_account',
                 label: 'Add account',
-                onTap: () => _toast('Add account'),
+                onTap: () => _open(const AddAccountSettingsScreen()),
               ),
               SettingsMenuRow(
                 iconAssetName: 'logout',

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/bill_model.dart';
@@ -43,6 +42,7 @@ class BillsScreen extends StatefulWidget {
 
 class _BillsScreenState extends State<BillsScreen> {
   final _svc = FirestoreService();
+  static const double _fabBottomInset = 123; // match home screen FAB position
 
   String get _weekRangeLabel {
     final now = DateTime.now();
@@ -139,8 +139,12 @@ class _BillsScreenState extends State<BillsScreen> {
           final settled = allBills.where((b) => b.isFullySettled).toList();
           final bills = [...active, ...settled];
           final (youOwe, owedToYou) = _summarise(allBills);
+          final fabBottom =
+              MediaQuery.paddingOf(context).bottom + _fabBottomInset;
 
-          return CustomScrollView(
+          return Stack(
+            children: [
+              CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
               HouseAppBar(
@@ -230,18 +234,21 @@ SliverToBoxAdapter(
                   ),
                 ),
 
-              // ── New bill button ───────────────────────────────────────────────────────────
-                   // ── New bill button ───────────────────────────────────────────────────────────
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-                        child: _NewBillButton(onTap: () {
-                      SoundService.instance.playPop();
-                      _openNewBillSheet(); }
-                      ),
-                    ),
+              const SliverToBoxAdapter(child: SizedBox(height: 180)),
+            ],
+          ),
+              Positioned(
+                left: HomeTokens.horizontalPadding,
+                bottom: fabBottom,
+                child: HomeGlassActionButton(
+                  label: 'New bill',
+                  width: 171,
+                  onTap: () {
+                    SoundService.instance.playPop();
+                    _openNewBillSheet();
+                  },
                 ),
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+              ),
             ],
           );
         },
@@ -569,59 +576,6 @@ class _StatusPill extends StatelessWidget {
       child: Text(label,
           style: GoogleFonts.poppins(
               fontSize: 11, fontWeight: FontWeight.w600, color: color)),
-    );
-  }
-}
-
-// ── New Bill Button ───────────────────────────────────────────────────────────
-class _NewBillButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _NewBillButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: GestureDetector(
-        onTap: onTap,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(50),
-          child: Stack(
-            children: [
-              // Background image
-              Positioned.fill(
-                child: Image.asset(
-                  'assets/images/BottomNavBG.png',
-                  fit: BoxFit.cover,
-                ),
-              ),
-              // Button content
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SvgPicture.asset(
-                      'assets/images/bills/plus_sign.svg',
-                      width: 18,
-                      height: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'New bill',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: _textPri,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
