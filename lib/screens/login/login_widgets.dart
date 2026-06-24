@@ -317,6 +317,33 @@ class LoginPrimaryButton extends StatelessWidget {
   }
 }
 
+/// Circular Apple / Google sign-in buttons.
+class LoginSocialAuthButton extends StatelessWidget {
+  final String assetPath;
+  final VoidCallback? onTap;
+
+  const LoginSocialAuthButton({
+    super.key,
+    required this.assetPath,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipOval(
+        child: Image.asset(
+          assetPath,
+          width: 66,
+          height: 66,
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+}
+
 /// "Or continue with" label plus Apple / Google buttons from Figma.
 class LoginSocialAuthRow extends StatelessWidget {
   const LoginSocialAuthRow({super.key});
@@ -336,9 +363,17 @@ class LoginSocialAuthRow extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 17),
-        SvgPicture.asset(
-          'assets/images/login/social_buttons.svg',
-          height: 66,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            LoginSocialAuthButton(
+              assetPath: 'assets/images/login/apple_icon.png',
+            ),
+            SizedBox(width: 44),
+            LoginSocialAuthButton(
+              assetPath: 'assets/images/login/google_icon.png',
+            ),
+          ],
         ),
       ],
     );

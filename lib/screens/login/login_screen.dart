@@ -119,52 +119,59 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           const LoginScreenBackground(),
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: LoginTokens.horizontalPadding,
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 44),
-                  const LoginCatLogo(),
-                  const SizedBox(height: 44),
-                  LoginScreenTitle(
-                    text: _isSignIn ? 'SIGN IN' : 'CREATE AN ACCOUNT',
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: LoginTokens.horizontalPadding,
                   ),
-                  const SizedBox(height: 34),
-                  LoginGradientField(
-                    controller: _emailCtrl,
-                    label: 'Email',
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  const SizedBox(height: 17),
-                  LoginGradientField(
-                    controller: _passwordCtrl,
-                    label: 'Password',
-                    obscureText: _obscurePassword,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        color: Colors.white54,
-                        size: 20,
-                      ),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const LoginCatLogo(),
+                        const SizedBox(height: 44),
+                        LoginScreenTitle(
+                          text: _isSignIn ? 'SIGN IN' : 'CREATE AN ACCOUNT',
+                        ),
+                        const SizedBox(height: 34),
+                        LoginGradientField(
+                          controller: _emailCtrl,
+                          label: 'Email',
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: 17),
+                        LoginGradientField(
+                          controller: _passwordCtrl,
+                          label: 'Password',
+                          obscureText: _obscurePassword,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              color: Colors.white54,
+                              size: 20,
+                            ),
+                            onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword),
+                          ),
+                        ),
+                        if (_errorMessage != null) ...[
+                          const SizedBox(height: 16),
+                          LoginErrorBanner(message: _errorMessage!),
+                        ],
+                        const SizedBox(height: 27),
+                        _buildAnimatedActionArea(),
+                        const SizedBox(height: 32),
+                        LoginToggleLink(isSignIn: _isSignIn, onTap: _toggleMode),
+                        const SizedBox(height: 24),
+                      ],
                     ),
                   ),
-                  if (_errorMessage != null) ...[
-                    const SizedBox(height: 16),
-                    LoginErrorBanner(message: _errorMessage!),
-                  ],
-                  const SizedBox(height: 27),
-                  _buildAnimatedActionArea(),
-                  const SizedBox(height: 32),
-                  LoginToggleLink(isSignIn: _isSignIn, onTap: _toggleMode),
-                  const SizedBox(height: 24),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ],
