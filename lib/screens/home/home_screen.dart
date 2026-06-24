@@ -9,6 +9,8 @@ import '../../widgets/shared_app_bar.dart';
 import 'home_widgets.dart';
 import 'new_chore_sheet.dart';
 import 'new_note_sheet.dart';
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class HomeScreen extends StatefulWidget {
   final String userId;
@@ -23,6 +25,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _fs = FirestoreService();
   final _scrollCtrl = ScrollController();
+  StreamSubscription? _membersSub;
 
   List<Map<String, dynamic>> _members = []; // {userId, name, avatarIndex}
   String _houseName = '';
@@ -36,14 +39,50 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadHouseData();
+    _listenToMembers();
   }
 
   @override
-  void dispose() {
-    _scrollCtrl.dispose();
-    super.dispose();
+void dispose() {
+  for (final sub in _userSubs) {
+    sub.cancel();
   }
+  _membersSub?.cancel();
+  _scrollCtrl.dispose();
+  super.dispose();
+}
+final List<StreamSubscription> _userSubs = [];
 
+void _listenToMembers() async {
+  // First load to get the list of member IDs
+  final members = await _fs.getHouseMemberDetails(widget.houseId);
+  if (!mounted) return;
+  setState(() => _members = members);
+
+  // Then stream each user doc individually
+  for (final m in members) {
+    final uid = m['userId'] as String;
+    final sub = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .snapshots()
+        .listen((doc) {
+      if (!mounted || !doc.exists) return;
+      final data = doc.data()!;
+      setState(() {
+        final idx = _members.indexWhere((m) => m['userId'] == uid);
+        if (idx != -1) {
+          _members[idx] = {
+            ..._members[idx],
+            'name': data['name'] as String? ?? data['userName'] as String? ?? '',
+            'avatarIndex': data['avatarIndex'] as int? ?? 0,
+          };
+        }
+      });
+    });
+    _userSubs.add(sub);
+  }
+}
   Future<void> _loadHouseData() async {
     final house = await _fs.getHouseData(widget.houseId);
     final members = await _fs.getHouseMemberDetails(widget.houseId);
@@ -123,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           currentUserId: widget.userId,
                           weekRangeLabel: _weekRangeLabel,
                           houseName: _houseName,
-                          avatarIndex: _myMember['avatarIndex'] as int? ?? 0,
+                          
                         ),
                         if (pendingVotes.isNotEmpty)
                           SliverToBoxAdapter(

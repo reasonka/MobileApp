@@ -21,6 +21,15 @@ class FirestoreService {
 
   final Map<String, String> _nameCache = {};
 
+  Future<Map<String, dynamic>> getUserProfile(String userId) async {
+  final doc = await _db.collection('users').doc(userId).get();
+  final d = doc.data() ?? {};
+  return {
+    'name': (d['name'] as String?) ?? (d['userName'] as String?) ?? 'Unknown',
+    'avatarIndex': d['avatarIndex'] as int? ?? 0,
+  };
+}
+
   Future<String> getUserName(String userId) async {
     if (_nameCache.containsKey(userId)) return _nameCache[userId]!;
     final doc = await _db.collection('users').doc(userId).get();

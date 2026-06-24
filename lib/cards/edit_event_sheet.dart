@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/event_model.dart';
 import '../../services/firestore_service.dart';
+import '../../services/sound_service.dart';
 
 class EditEventSheet extends StatefulWidget {
   final EventModel event;
@@ -118,11 +119,17 @@ Widget build(BuildContext context) {
           trailing: const Icon(Icons.calendar_month, color: Color(0xFFE040FB)),
           tileColor: Colors.black.withOpacity(0.2),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          onTap: _pickDate,
+          onTap: () {
+              SoundService.instance.playPop();
+              _pickDate();
+            },
         ),
         const SizedBox(height: 24),
         ElevatedButton(
-          onPressed: _submit,
+          onPressed: () {
+            SoundService.instance.playDone();
+            _submit();
+          },
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFE040FB),
             padding: const EdgeInsets.symmetric(vertical: 16),

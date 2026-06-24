@@ -5,7 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../profile_screen.dart';
-
+import '../../services/sound_service.dart';
 import 'settings_widgets.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -286,7 +286,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      SoundService.instance.playPop();
+                      Navigator.pop(context);
+                    },
                     child: Text(
                       'Cancel',
                       style: GoogleFonts.poppins(
@@ -308,6 +311,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       elevation: 0,
                     ),
                     onPressed: () async {
+                      SoundService.instance.playPop();
                       Navigator.pop(context);
                       await _auth.signOut();
                     },
@@ -406,6 +410,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 22),
             GestureDetector(
   onTap: () {
+    SoundService.instance.playPop();
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -459,7 +464,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       // Keep this specific icon button for the QR sheet
       GestureDetector(
-        onTap: _showProfileQR, 
+        onTap: () {
+            SoundService.instance.playPop();
+            _showProfileQR();
+          },
         child: Image.asset(
           'assets/images/settings/profile_qr_icon.png',
           width: 42,
@@ -494,7 +502,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             if (_searchQuery.isEmpty) ...[
               const SizedBox(height: 8),
-              SettingsFamilyLinkCard(onTap: _showFamilyQR),
+              SettingsFamilyLinkCard(onTap: () {
+                SoundService.instance.playPop();
+                _showFamilyQR();
+              }),
               const SizedBox(height: 20),
               SettingsMenuRow(
                 iconAssetName: 'add_account',

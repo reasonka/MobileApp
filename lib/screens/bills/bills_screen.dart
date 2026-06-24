@@ -5,6 +5,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/bill_model.dart';
 import '../../services/firestore_service.dart';
 import '../../widgets/shared_app_bar.dart';
+import '../../services/sound_service.dart';
+import '../home/home_widgets.dart';
 
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
@@ -37,6 +39,7 @@ class BillsScreen extends StatefulWidget {
   @override
   State<BillsScreen> createState() => _BillsScreenState();
 }
+
 
 class _BillsScreenState extends State<BillsScreen> {
   final _svc = FirestoreService();
@@ -232,10 +235,12 @@ SliverToBoxAdapter(
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-                        child: _NewBillButton(onTap: _openNewBillSheet),  
+                        child: _NewBillButton(onTap: () {
+                      SoundService.instance.playPop();
+                      _openNewBillSheet(); }
                       ),
                     ),
-
+                ),
               const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           );
@@ -403,6 +408,7 @@ class _BillCard extends StatelessWidget {
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () {
+                            SoundService.instance.playDelete();
                             showDialog(
                               context: context,
                               builder: (_) => AlertDialog(
@@ -422,6 +428,7 @@ class _BillCard extends StatelessWidget {
                                   ),
                                   TextButton(
                                     onPressed: () {
+                                      SoundService.instance.playDelete();
                                       Navigator.pop(context);
                                       onDelete();
                                     },
@@ -466,43 +473,35 @@ ClipRRect(
             ),
             // ── Centered paid by ──────────────────
             Expanded(
-              child: FutureBuilder<String>(
-  future: getUserName(bill.paidBy),
-  builder: (ctx, snap) {
-    final name = snap.data ?? '…';
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'Paid by',
-          style: GoogleFonts.poppins(
-              fontSize: 12, fontWeight: FontWeight.w700, color: const Color.fromARGB(255, 255, 255, 255)),
-        ),
-        const SizedBox(width: 8),
-        CircleAvatar(
-          radius: 18,
-          backgroundColor: _pinkDark,
-          child: Text(
-            name.isNotEmpty ? name[0].toUpperCase() : '?',
-            style: GoogleFonts.poppins(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: _textPri),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          name,
-          style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: _textPri),
+              child: 
+              FutureBuilder<Map<String, dynamic>>(
+                  future: FirestoreService().getUserProfile(bill.paidBy),
+                  builder: (ctx, snap) {
+                    final name = snap.data?['name'] as String? ?? '…';
+                    final avatarIndex = snap.data?['avatarIndex'] as int? ?? 0;
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Paid by',
+                          style: GoogleFonts.poppins(
+                              fontSize: 12, fontWeight: FontWeight.w700, color: const Color.fromARGB(255, 255, 255, 255)),
                         ),
-                      ],
-                    );
-                },
-              ),
-            ),
+                        const SizedBox(width: 8),
+                        HomeCatAvatar(avatarIndex: avatarIndex, size: 36),
+                        const SizedBox(width: 8),
+                        Text(
+                          name,
+                          style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: _textPri),
+                                        ),
+                                      ],
+                                    );
+                                },
+                              ),
+                            ),
             // ── Status pill right ─────────────────
             SizedBox(
               width: 80,
@@ -900,7 +899,10 @@ Row(
                     final name = m['userName']!;
                     final selected = uid == _bill.paidBy;
                     return GestureDetector(
-                      onTap: () => _changePayer(uid),
+                      onTap: () {
+                            SoundService.instance.playPop();
+                            _changePayer(uid);
+                          },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
                         padding: const EdgeInsets.symmetric(
@@ -917,15 +919,12 @@ Row(
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            CircleAvatar(
-                              radius: 11,
-                              backgroundColor:
-                                  selected ? _pink : _pinkDark,
-                              child: Text(name[0].toUpperCase(),
-                                  style: GoogleFonts.poppins(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      color: _textPri)),
+                            FutureBuilder<Map<String, dynamic>>(
+                              future: FirestoreService().getUserProfile(uid),
+                              builder: (ctx, snap) {
+                                final avatarIndex = snap.data?['avatarIndex'] as int? ?? 0;
+                                return HomeCatAvatar(avatarIndex: avatarIndex, size: 22);
+                              },
                             ),
                             const SizedBox(width: 6),
                             Text(name,
@@ -971,16 +970,12 @@ Row(
                       ),
                       child: Row(
                         children: [
-                          CircleAvatar(
-                            radius: 16,
-                            backgroundColor: paid ? _greenBg : _pinkDark,
-                            child: Text(
-                              name.isNotEmpty ? name[0].toUpperCase() : '?',
-                              style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: _textPri),
-                            ),
+                          FutureBuilder<Map<String, dynamic>>(
+                            future: FirestoreService().getUserProfile(uid),
+                            builder: (ctx, snap) {
+                              final avatarIndex = snap.data?['avatarIndex'] as int? ?? 0;
+                              return HomeCatAvatar(avatarIndex: avatarIndex, size: 32);
+                            },
                           ),
                           const SizedBox(width: 10),
                           Expanded(
@@ -1006,7 +1001,10 @@ Row(
                             GestureDetector(
                               onTap: _saving
                                   ? null
-                                  : () => _toggleSettle(uid, paid),
+                                  : () {
+                                      SoundService.instance.playDone();
+                                      _toggleSettle(uid, paid);
+                                    },
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
                                 width: 32,
@@ -1101,12 +1099,26 @@ class _NewBillSheetState extends State<_NewBillSheet> {
   bool _loading = false;
   late String _paidByUid;
   late Set<String> _splitBetween;
+  final Map<String, int> _avatarCache = {};
 
   @override
   void initState() {
     super.initState();
     _paidByUid = widget.currentUserId;
     _splitBetween = widget.members.map((m) => m['userId']!).toSet();
+    _fetchAvatars();
+  }
+
+  Future<void> _fetchAvatars() async {
+    for (final m in widget.members) {
+      final uid = m['userId']!;
+      final profile = await FirestoreService().getUserProfile(uid);
+      if (mounted) {
+        setState(() {
+          _avatarCache[uid] = (profile['avatarIndex'] as int?) ?? 0;
+        });
+      }
+    }
   }
 
   @override
@@ -1225,8 +1237,10 @@ class _NewBillSheetState extends State<_NewBillSheet> {
                       final cat = BillCategory.values[i];
                       final selected = cat == _selectedCat;
                       return GestureDetector(
-                        onTap: () =>
-                            setState(() => _selectedCat = cat),
+                        onTap: () {
+                          SoundService.instance.playPop();
+                          setState(() => _selectedCat = cat);
+                        },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(
@@ -1272,7 +1286,10 @@ class _NewBillSheetState extends State<_NewBillSheet> {
                     final name = m['userName']!;
                     final selected = uid == _paidByUid;
                     return GestureDetector(
-                      onTap: () => setState(() => _paidByUid = uid),
+                      onTap: () {
+                        SoundService.instance.playPop();
+                        setState(() => _paidByUid = uid);
+                      },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
                         padding: const EdgeInsets.symmetric(
@@ -1289,23 +1306,12 @@ class _NewBillSheetState extends State<_NewBillSheet> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            CircleAvatar(
-                              radius: 11,
-                              backgroundColor:
-                                  selected ? _pink : _pinkDark,
-                              child: Text(name[0].toUpperCase(),
-                                  style: GoogleFonts.poppins(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      color: _textPri)),
-                            ),
+                            HomeCatAvatar(avatarIndex: _avatarCache[uid] ?? 0, size: 22),
                             const SizedBox(width: 6),
                             Text(name,
                                 style: GoogleFonts.poppins(
                                     fontSize: 13,
-                                    color: selected
-                                        ? _pink
-                                        : _textSec)),
+                                    color: selected ? _pink : _textSec)),
                           ],
                         ),
                       ),
@@ -1331,13 +1337,16 @@ class _NewBillSheetState extends State<_NewBillSheet> {
                     final name = m['userName']!;
                     final included = _splitBetween.contains(uid);
                     return GestureDetector(
-                      onTap: () => setState(() {
-                        if (included) {
-                          _splitBetween.remove(uid);
-                        } else {
-                          _splitBetween.add(uid);
-                        }
-                      }),
+                      onTap: () {
+                        SoundService.instance.playPop();
+                        setState(() {
+                          if (included) {
+                            _splitBetween.remove(uid);
+                          } else {
+                            _splitBetween.add(uid);
+                          }
+                        });
+                      },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
                         padding: const EdgeInsets.symmetric(
@@ -1381,7 +1390,10 @@ class _NewBillSheetState extends State<_NewBillSheet> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _loading ? null : _submit,
+                    onPressed: _loading ? null : () {
+                      SoundService.instance.playDone();
+                      _submit();
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _pink,
                       foregroundColor: _textPri,

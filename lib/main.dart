@@ -14,12 +14,14 @@ import 'screens/login/profile_setup_screen.dart';
 import 'screens/login/family_setup_screen.dart';
 // ignore: unused_import
 import 'firebase_options.dart';
+import 'services/sound_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     // options: DefaultFirebaseOptions.currentPlatform,
   );
+  await SoundService.instance.preload();
   runApp(const HomieApp());
 }
 
@@ -204,7 +206,8 @@ class _RootNavigationState extends State<RootNavigation>
 
   void _navigateTo(int index) {
     if (index == _current) return;
-
+    SoundService.instance.playSwipe(); 
+    
     bool goingRight = index > _current;
     if (_current == _navItems.length - 1 && index == 0) {
       goingRight = true;

@@ -7,6 +7,7 @@ import '../../services/firestore_service.dart';
 import '../../widgets/shared_app_bar.dart';
 import '../../cards/event_card.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../services/sound_service.dart';
 
 class CalendarScreen extends StatefulWidget {
   final String houseId;
@@ -205,10 +206,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
         children: [
           IconButton(
             icon: const Icon(Icons.chevron_left, color: Colors.white70, size: 28),
-            onPressed: _prevMonth,
+            onPressed: () {
+              SoundService.instance.playPop();
+              _prevMonth();
+            },
           ),
           GestureDetector(
-            onTap: _pickMonthYear,
+            onTap: () {
+              SoundService.instance.playPop();
+              _pickMonthYear();
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
               decoration: BoxDecoration(
@@ -231,7 +238,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
           IconButton(
             icon: const Icon(Icons.chevron_right,
                 color: Colors.white70, size: 28),
-            onPressed: _nextMonth,
+            onPressed: () {
+              SoundService.instance.playPop();
+              _nextMonth();
+            },
           ),
         ],
       ),
@@ -287,7 +297,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
         final isPast = day.isBefore(today);
 
         return GestureDetector(
-          onTap: () => setState(() => _selectedDay = day),
+          onTap: () {
+              SoundService.instance.playPop();
+              setState(() => _selectedDay = day);
+            },
           child: Container(
             margin: const EdgeInsets.all(1),
             decoration: BoxDecoration(
@@ -330,12 +343,15 @@ Widget _buildEventPanel(BuildContext context, List<EventModel> selectedEvents, L
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 16), 
           child: GestureDetector(
-            onTap: () => AddEventSheet.show(
-              context,
-              widget.houseId,
-              widget.currentUserId,
-              initialDate: _selectedDay,
-            ),
+            onTap: () {
+              SoundService.instance.playPop();
+              AddEventSheet.show(
+                context,
+                widget.houseId,
+                widget.currentUserId,
+                initialDate: _selectedDay,
+              );
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
               decoration: BoxDecoration(

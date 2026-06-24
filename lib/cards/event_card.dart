@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/event_model.dart';
 import '../services/firestore_service.dart';
 import 'edit_event_sheet.dart'; 
+import '../services/sound_service.dart';
 
 class EventCard extends StatelessWidget {
   final EventModel event;
@@ -27,22 +28,13 @@ class EventCard extends StatelessWidget {
     final String formattedDate = DateFormat('dd/MM').format(event.date);
     final _firestoreService = FirestoreService();
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12.0),
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF2A2B3E).withOpacity(isDone ? 0.4 : 0.8),
-            const Color(0xFF3E3054).withOpacity(isDone ? 0.4 : 0.8),
-          ],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        borderRadius: BorderRadius.circular(16.0),
-        border: Border.all(
-          color: Colors.white.withOpacity(isDone ? 0.04 : 0.08),
-          width: 1,
+     return Container(
+    margin: const EdgeInsets.only(bottom: 12.0),
+    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+    decoration: const BoxDecoration(
+      image: DecorationImage(
+        image: AssetImage('assets/images/calendar/EventPanel.png'),
+        fit: BoxFit.fill,
         ),
       ),
       child: Row(
@@ -90,6 +82,7 @@ class EventCard extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.edit, color: Colors.white60, size: 20),
               onPressed: () {
+                SoundService.instance.playPop();
                 EditEventSheet.show(context, event, houseId, currentUserId);
               },
             ),
@@ -97,6 +90,8 @@ class EventCard extends StatelessWidget {
               icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
               onPressed: () async {
                 // optional: show a confirmation dialog first
+                
+                SoundService.instance.playDelete();
                 await _firestoreService.deleteEvent(
                   eventId: event.eventId,
                   houseId: houseId,

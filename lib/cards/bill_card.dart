@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:mobile_app/screens/home/home_widgets.dart';
 import '../../models/bill_model.dart';
 import '../../services/firestore_service.dart';
 import '../../widgets/shared_app_bar.dart';
+import '../../services/sound_service.dart';
+
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
 const _bg         = Color(0xFF0D0D1A);
@@ -238,7 +241,10 @@ class _BillsScreenState extends State<BillsScreen> {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
                   child: Center(
-                    child: _NewBillButton(onTap: _openNewBillSheet),
+                    child: _NewBillButton(onTap: () {
+                      SoundService.instance.playPop();
+                      _openNewBillSheet();
+                    }),
                   ),
                 ),
               ),
@@ -405,6 +411,7 @@ class _BillCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         GestureDetector(
                           onTap: () {
+                            SoundService.instance.playDelete();
                             showDialog(
                               context: context,
                               builder: (_) => AlertDialog(
@@ -424,6 +431,7 @@ class _BillCard extends StatelessWidget {
                                   ),
                                   TextButton(
                                     onPressed: () {
+                                      SoundService.instance.playDelete();
                                       Navigator.pop(context);
                                       onDelete();
                                     },
@@ -464,28 +472,16 @@ class _BillCard extends StatelessWidget {
                                 // Left spacer (same width as status pill area)
                                 const SizedBox(width: 90),
                                 Expanded(
-                                  child: FutureBuilder<String>(
-                                    future: getUserName(bill.paidBy),
+                                  child: FutureBuilder<Map<String, dynamic>>(
+                                    future: FirestoreService().getUserProfile(bill.paidBy),
                                     builder: (ctx, snap) {
-                                      final name = snap.data ?? '...';
-                                      return Center(
-                                        child: Row(
+                                      final name = snap.data?['name'] as String? ?? '...';
+                                        final avatarIndex = snap.data?['avatarIndex'] as int? ?? 0;
+                                        return Center(
+                                          child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            CircleAvatar(
-                                              radius: 18,
-                                              backgroundColor: _pinkDark,
-                                              child: Text(
-                                                name.isNotEmpty
-                                                    ? name[0].toUpperCase()
-                                                    : '?',
-                                                style: GoogleFonts.poppins(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: _textPri,
-                                                ),
-                                              ),
-                                            ),
+                                            HomeCatAvatar(avatarIndex: avatarIndex, size: 36),
                                             const SizedBox(width: 8),
                                             Column(
                                               mainAxisSize: MainAxisSize.min,
@@ -775,7 +771,10 @@ class _BillDetailSheetState extends State<_BillDetailSheet> {
                     final name = m['userName']!;
                     final selected = uid == _bill.paidBy;
                     return GestureDetector(
-                      onTap: () => _changePayer(uid),
+                      onTap: () {
+                        SoundService.instance.playPop();
+                        _changePayer(uid);
+                      },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
                         padding: const EdgeInsets.symmetric(
@@ -792,15 +791,12 @@ class _BillDetailSheetState extends State<_BillDetailSheet> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            CircleAvatar(
-                              radius: 11,
-                              backgroundColor:
-                                  selected ? _pink : _pinkDark,
-                              child: Text(name[0].toUpperCase(),
-                                  style: GoogleFonts.poppins(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      color: _textPri)),
+                            FutureBuilder<Map<String, dynamic>>(
+                              future: FirestoreService().getUserProfile(uid),
+                              builder: (ctx, snap) {
+                                final avatarIndex = snap.data?['avatarIndex'] as int? ?? 0;
+                                return HomeCatAvatar(avatarIndex: avatarIndex, size: 22);
+                              },
                             ),
                             const SizedBox(width: 6),
                             Text(name,
@@ -849,18 +845,12 @@ class _BillDetailSheetState extends State<_BillDetailSheet> {
                       ),
                       child: Row(
                         children: [
-                          CircleAvatar(
-                            radius: 16,
-                            backgroundColor: paid ? _greenBg : _pinkDark,
-                            child: Text(
-                              name.isNotEmpty
-                                  ? name[0].toUpperCase()
-                                  : '?',
-                              style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: _textPri),
-                            ),
+                          FutureBuilder<Map<String, dynamic>>(
+                            future: FirestoreService().getUserProfile(uid),
+                            builder: (ctx, snap) {
+                              final avatarIndex = snap.data?['avatarIndex'] as int? ?? 0;
+                              return HomeCatAvatar(avatarIndex: avatarIndex, size: 22);
+                            },
                           ),
                           const SizedBox(width: 10),
                           Expanded(
@@ -889,7 +879,10 @@ class _BillDetailSheetState extends State<_BillDetailSheet> {
                             GestureDetector(
                               onTap: _saving
                                   ? null
-                                  : () => _toggleSettle(uid, paid),
+                                  : () {
+                                      SoundService.instance.playPop();
+                                      _toggleSettle(uid, paid);
+                                    },
                               child: AnimatedContainer(
                                 duration:
                                     const Duration(milliseconds: 200),
@@ -1173,15 +1166,12 @@ class _NewBillSheetState extends State<_NewBillSheet> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            CircleAvatar(
-                              radius: 11,
-                              backgroundColor:
-                                  selected ? _pink : _pinkDark,
-                              child: Text(name[0].toUpperCase(),
-                                  style: GoogleFonts.poppins(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      color: _textPri)),
+                            FutureBuilder<Map<String, dynamic>>(
+                              future: FirestoreService().getUserProfile(uid),
+                              builder: (ctx, snap) {
+                                final avatarIndex = snap.data?['avatarIndex'] as int? ?? 0;
+                                return HomeCatAvatar(avatarIndex: avatarIndex, size: 22);
+                              },
                             ),
                             const SizedBox(width: 6),
                             Text(name,
@@ -1265,7 +1255,10 @@ class _NewBillSheetState extends State<_NewBillSheet> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _loading ? null : _submit,
+                    onPressed: _loading ? null : () {
+                        SoundService.instance.playDone();
+                        _submit();
+                      },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _pink,
                       foregroundColor: _textPri,

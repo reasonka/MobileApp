@@ -42,6 +42,8 @@ dependencies:
   google_fonts: ^8.1.0
   flutter_svg: ^2.2.0
   qr_flutter: ^4.1.0
+  just_audio: ^0.10.5
+  audioplayers: ^6.7.1
 
 dev_dependencies:
   flutter_test:
@@ -90,6 +92,11 @@ flutter:
     - assets\images\calendar\EventMainPanel.png
     - assets\images\calendar\EventPanel.png
     - assets\images\calendar\plus_sign.svg
+    - assets/sounds/bubblePop.mp3
+    - assets/sounds/bubblePop2.mp3
+    - assets/sounds/delete.mp3
+    - assets/sounds/done.mp3
+    - assets/sounds/swipe.mp3
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

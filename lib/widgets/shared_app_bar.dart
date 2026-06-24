@@ -5,6 +5,9 @@ import '../../services/firestore_service.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/home/home_widgets.dart';
 import '../screens/profile_screen.dart';
+import '../../services/sound_service.dart';
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class HouseAppBar extends StatefulWidget {
   final String houseId;
@@ -32,13 +35,38 @@ class _HouseAppBarState extends State<HouseAppBar> {
   final FirestoreService _fs = FirestoreService();
   String _houseName = '';
   int _avatarIndex = 0;
+  StreamSubscription? _sub;
 
   @override
   void initState() {
     super.initState();
     if (widget.houseName != null) _houseName = widget.houseName!;
     if (widget.avatarIndex != null) _avatarIndex = widget.avatarIndex!;
+    _listenToProfile();
     if (widget.houseName == null || widget.avatarIndex == null) _load();
+  }
+
+  void _listenToProfile() {
+    _sub = FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.currentUserId)
+        .snapshots()
+        .listen((doc) {
+      if (!mounted) return;
+      final data = doc.data() ?? {};
+      setState(() {
+        _avatarIndex = data['avatarIndex'] as int? ?? 0;
+      });
+    });
+  }
+
+  Future<void> _loadHouseName() async {
+    final house = await _fs.getHouseData(widget.houseId);
+    if (mounted) {
+      setState(() {
+        _houseName = (house?['name'] as String?) ?? 'Our House';
+      });
+    }
   }
 
   @override
@@ -47,7 +75,11 @@ class _HouseAppBarState extends State<HouseAppBar> {
     if (widget.houseName != null) _houseName = widget.houseName!;
     if (widget.avatarIndex != null) _avatarIndex = widget.avatarIndex!;
   }
-
+      @override
+        void dispose() {
+          _sub?.cancel();
+          super.dispose();
+        }
   Future<void> _load() async {
     final house = await _fs.getHouseData(widget.houseId);
     final members = await _fs.getHouseMemberDetails(widget.houseId);
@@ -99,6 +131,7 @@ Widget build(BuildContext context) {
                   const SizedBox(width: 16),
                   GestureDetector(
                       onTap: () {
+                        SoundService.instance.playPop();
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -142,15 +175,18 @@ Widget build(BuildContext context) {
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: widget.onSettingsTap ??
-                        () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => SettingsScreen(
-                                  userId: widget.currentUserId,
-                                  houseId: widget.houseId,
-                                ),
-                              ),
+                      () {
+                        SoundService.instance.playPop();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SettingsScreen(
+                              userId: widget.currentUserId,
+                              houseId: widget.houseId,
                             ),
+                          ),
+                        );
+                      },
                     child: SvgPicture.asset(
                       'assets/images/home/settings.svg',
                       width: 40,
