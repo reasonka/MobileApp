@@ -46,6 +46,12 @@ dependencies:
   audioplayers: ^6.7.1
 
 dev_dependencies:
+  flutter_launcher_icons: "^0.13.1"
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/calendar/avatar_blue_wink.png"
   flutter_test:
     sdk: flutter
 
