@@ -493,7 +493,7 @@ class _Slot extends StatelessWidget {
 
 // ─────────────────────────────────────────────
 // PLACEHOLDER SCREENS
-// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────-
 
 class _PlaceholderScreen extends StatelessWidget {
   final String label;
