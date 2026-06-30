@@ -38,10 +38,15 @@ class BillModel {
   final double amount;
   final String paidBy;
   final List<String> splitBetween;
-  final List<String> settledBy; 
+  final List<String> settledBy;
   final BillCategory category;
   final DateTime createdAt;
   final String houseId;
+
+  /// Optional per-person override. Keys are userIds, values are their share.
+  /// When null or empty, the bill is split equally via [perPersonAmount].
+  /// When set, use [amountFor] to get each person's share instead.
+  final Map<String, double>? customAmounts;
 
   BillModel({
     required this.billId,
@@ -52,21 +57,40 @@ class BillModel {
     required this.category,
     required this.createdAt,
     required this.houseId,
+    this.customAmounts,
   });
 
-  double get perPersonAmount => amount / splitBetween.length;
+  bool get hasCustomAmounts =>
+      customAmounts != null && customAmounts!.isNotEmpty;
 
-  
+  /// Equal-split amount, used only when [hasCustomAmounts] is false.
+  double get perPersonAmount =>
+      splitBetween.isEmpty ? 0 : amount / splitBetween.length;
+
+  /// Per-person amount respecting custom overrides, falling back to equal
+  /// split for anyone not given a custom value.
+  double amountFor(String userId) {
+    if (hasCustomAmounts && customAmounts!.containsKey(userId)) {
+      return customAmounts![userId]!;
+    }
+    return perPersonAmount;
+  }
+
   bool get isFullySettled {
     final debtors = splitBetween.where((id) => id != paidBy).toList();
     if (debtors.isEmpty) return true;
     return debtors.every((id) => settledBy.contains(id));
   }
 
+  /// True once anyone has settled any part of the bill — used to lock
+  /// editing of people/category/amounts past this point.
+  bool get hasAnySettlement => settledBy.isNotEmpty;
+
   bool isSettledBy(String userId) => settledBy.contains(userId);
 
   factory BillModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    final rawCustom = data['customAmounts'] as Map<String, dynamic>?;
     return BillModel(
       billId: doc.id,
       amount: (data['amount'] as num).toDouble(),
@@ -78,16 +102,20 @@ class BillModel {
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
       houseId: data['houseId'] as String,
+      customAmounts: rawCustom?.map(
+        (k, v) => MapEntry(k, (v as num).toDouble()),
+      ),
     );
   }
 
   Map<String, dynamic> toMap() => {
-    'amount': amount,
-    'paidBy': paidBy,
-    'splitBetween': splitBetween,
-    'settledBy': settledBy,
-    'category': category.name,
-    'createdAt': Timestamp.fromDate(createdAt),
-    'houseId': houseId,
-  };
+        'amount': amount,
+        'paidBy': paidBy,
+        'splitBetween': splitBetween,
+        'settledBy': settledBy,
+        'category': category.name,
+        'createdAt': Timestamp.fromDate(createdAt),
+        'houseId': houseId,
+        'customAmounts': customAmounts,
+      };
 }

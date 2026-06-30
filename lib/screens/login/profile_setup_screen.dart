@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../theme.dart';
 import '../settings/settings_widgets.dart';
 import 'login_widgets.dart';
+import '../../services/firestore_service.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   final String uid;

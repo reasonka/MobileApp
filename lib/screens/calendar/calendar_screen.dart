@@ -58,6 +58,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
+  bool _eventOccursOn(EventModel e, DateTime day) => e.occursOnDay(day);
+
   List<DateTime> _getDaysInMonth(DateTime month) {
     final last = DateTime(month.year, month.month + 1, 0);
     return List.generate(last.day,
@@ -66,22 +68,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   
   
-   List<EventModel> _sortEventsForList(List<EventModel> events) {
+  List<EventModel> _sortEventsForList(List<EventModel> events) {
     final now   = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    
-    final upcoming = events
-        .where((e) =>
-            !DateTime(e.date.year, e.date.month, e.date.day).isBefore(today))
-        .toList()
+    bool isPast(EventModel e) {
+      if (e.isBirthday) return false;
+      return DateTime(e.date.year, e.date.month, e.date.day).isBefore(today);
+    }
+
+    final upcoming = events.where((e) => !isPast(e)).toList()
       ..sort((a, b) => a.date.compareTo(b.date));
 
-    
-    final done = events
-        .where((e) =>
-            DateTime(e.date.year, e.date.month, e.date.day).isBefore(today))
-        .toList()
+    final done = events.where(isPast).toList()
       ..sort((a, b) => b.date.compareTo(a.date));
 
     return [...upcoming, ...done];
@@ -146,9 +145,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
           final allEvents = snapshot.data ?? [];
           final selectedEvents = allEvents
-              .where((e) => _isSameDay(e.date, _selectedDay))
+              .where((e) => _eventOccursOn(e, _selectedDay))
               .toList();
-          final sortedAllEvents = _sortEventsForList(allEvents);
+        
+          final nonBirthdayEvents = allEvents.where((e) => !e.isBirthday).toList();
+          final sortedAllEvents = _sortEventsForList(nonBirthdayEvents);
 
           return CustomScrollView(
             physics: const BouncingScrollPhysics(),
@@ -293,7 +294,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
         if (index < paddingCount) return const SizedBox.shrink();
         final day = days[index - paddingCount];
         final isSelected = _isSameDay(day, _selectedDay);
-        final hasEvents = events.any((e) => _isSameDay(e.date, day));
+        final dayEvents = events.where((e) => _eventOccursOn(e, day));
+        final hasEvents = dayEvents.isNotEmpty;
+        final hasBirthday = dayEvents.any((e) => e.isBirthday);
         final isPast = day.isBefore(today);
 
         return GestureDetector(
@@ -307,8 +310,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
               shape: BoxShape.circle,
               color: Colors.transparent,
               image: (hasEvents && !isPast)
-                  ? const DecorationImage(
-                      image: AssetImage('assets/images/bills/OweYou.png'),
+                  ? DecorationImage(
+                      image: AssetImage(
+                        hasBirthday
+                            ? 'assets/images/bills/YouOwe.png'
+                            : 'assets/images/bills/OweYou.png',
+                      ),
                       fit: BoxFit.cover,
                     )
                   : null,
@@ -396,29 +403,36 @@ Widget _buildEventPanel(BuildContext context, List<EventModel> selectedEvents, L
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(25, 25, 25, 40), 
-            child: allEvents.isEmpty
-                ? Center(
-                    child: Text(
-                      'No events scheduled',
-                      style: GoogleFonts.poppins(color: const Color(0xFF555577)),
-                    ),
-                  )
-                : ClipRRect( 
-                    borderRadius: BorderRadius.circular(30), 
-                    child: ListView.builder(
-                      padding: EdgeInsets.zero, 
-                      shrinkWrap: false,
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: allEvents.length,
-                      itemBuilder: (context, i) {
-                        return EventCard(
-                          event: allEvents[i],
-                          houseId: widget.houseId,
-                          currentUserId: widget.currentUserId,
-                        );
-                      },
-                    ),
+            child: () {
+              final birthdayToday = selectedEvents.where((e) => e.isBirthday).toList();
+              final combined = [...birthdayToday, ...allEvents];
+
+              if (combined.isEmpty) {
+                return Center(
+                  child: Text(
+                    'No events scheduled',
+                    style: GoogleFonts.poppins(color: const Color(0xFF555577)),
                   ),
+                );
+              }
+
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  shrinkWrap: false,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: combined.length,
+                  itemBuilder: (context, i) {
+                    return EventCard(
+                      event: combined[i],
+                      houseId: widget.houseId,
+                      currentUserId: widget.currentUserId,
+                    );
+                  },
+                ),
+              );
+            }(),
           ),
         ),
         const SizedBox(height: 20),

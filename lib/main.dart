@@ -15,6 +15,7 @@ import 'screens/login/family_setup_screen.dart';
 // ignore: unused_import
 import 'firebase_options.dart';
 import 'services/sound_service.dart';
+import 'services/notification_service.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +23,8 @@ void main() async {
     // options: DefaultFirebaseOptions.currentPlatform,
   );
   await SoundService.instance.preload();
+  await NotificationService.instance.init();
+  await NotificationService.instance.requestPermissions();
   runApp(const HomieApp());
 }
 
@@ -73,11 +76,11 @@ class HomieApp extends StatelessWidget {
               }
 
               if (data['houseId'] == null) {
-                return FamilySetupScreen(
-                  uid: user.uid,
-                  userName: data['name'] as String? ?? '',
-                );
-              }
+                    return FamilySetupScreen(
+                      uid: user.uid,
+                      userName: data['name'] as String? ?? '',
+                    );
+                  }
 
               return RootNavigation(
                 userId: user.uid,

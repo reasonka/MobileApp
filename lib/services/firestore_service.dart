@@ -92,18 +92,34 @@ class FirestoreService {
       .map((s) => s.docs.map(EventModel.fromFirestore).toList());
 
 Future<void> updateEvent({
-    required String eventId,
-    required String title,
-    required DateTime date,
-    required String houseId, 
-  }) async {
-    
-    await _db.collection('events').doc(eventId).update({
-      'title': title,
-      'date': Timestamp.fromDate(date),
-    });
-  }
-
+  required String eventId,
+  required String title,
+  required DateTime date,
+  required String houseId,
+  DateTime? reminderAt,
+}) async {
+  await _db.collection('events').doc(eventId).update({
+    'title': title,
+    'date': Timestamp.fromDate(date),
+    'reminderAt':
+        reminderAt != null ? Timestamp.fromDate(reminderAt) : FieldValue.delete(),
+  });
+}
+Future<DocumentReference> addEventReturningRef({
+  required String title,
+  required DateTime date,
+  required String houseId,
+  required String currentUserId,
+  DateTime? reminderAt,
+}) =>
+    _db.collection('events').add(EventModel(
+          eventId: '',
+          title: title,
+          date: date,
+          houseId: houseId,
+          createdBy: currentUserId,
+          reminderAt: reminderAt,
+        ).toMap());
   Future<void> deleteEvent({
     required String eventId,
     required String houseId, 
@@ -113,20 +129,46 @@ Future<void> updateEvent({
   }
 
   Future<void> addEvent({
-    required String title,
-    required DateTime date,
-    required String houseId,
-    required String currentUserId,
-  }) =>
-      _db.collection('events').add(EventModel(
-            eventId: '',
-            title: title,
-            date: date,
-            houseId: houseId,
-            createdBy: currentUserId,
-          ).toMap());
+  required String title,
+  required DateTime date,
+  required String houseId,
+  required String currentUserId,
+  DateTime? reminderAt,
+}) =>
+    _db.collection('events').add(EventModel(
+          eventId: '',
+          title: title,
+          date: date,
+          houseId: houseId,
+          createdBy: currentUserId,
+          reminderAt: reminderAt,
+        ).toMap());
 
-  
+
+  Future<void> addBirthdayEvent({
+  required String houseId,
+  required String currentUserId,
+  required String userName,
+  required DateTime birthday,
+}) async {
+  final existing = await _db
+      .collection('events')
+      .where('houseId', isEqualTo: houseId)
+      .where('createdBy', isEqualTo: currentUserId)
+      .where('isBirthday', isEqualTo: true)
+      .limit(1)
+      .get();
+  if (existing.docs.isNotEmpty) return;
+
+  await _db.collection('events').add(EventModel(
+        eventId: '',
+        title: "$userName's Birthday",
+        date: birthday,
+        houseId: houseId,
+        createdBy: currentUserId,
+        isBirthday: true,
+      ).toMap());
+}
 
   Stream<List<BillModel>> billsStream(String houseId) => _db
       .collection('bills')
@@ -156,7 +198,28 @@ Future<void> updateEvent({
   Future<void> deleteBill(String billId) =>
       _db.collection('bills').doc(billId).delete();
 
-  
+  Future<void> updateBillDetails({
+  required String billId,
+  required BillCategory category,
+  required List<String> splitBetween,
+  Map<String, double>? customAmounts,
+}) async {
+  final doc = await _db.collection('bills').doc(billId).get();
+  final data = doc.data();
+  if (data == null) {
+    throw Exception('Bill not found.');
+  }
+  final settledBy = List<String>.from(data['settledBy'] ?? []);
+  if (settledBy.isNotEmpty) {
+    throw Exception('Cannot edit a bill once someone has settled their share.');
+  }
+
+  await _db.collection('bills').doc(billId).update({
+    'category': category.name,
+    'splitBetween': splitBetween,
+    'customAmounts': customAmounts,
+  });
+}
 Future<void> settleBill({
   required String billId,
   required String userId,

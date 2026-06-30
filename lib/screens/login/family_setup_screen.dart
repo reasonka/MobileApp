@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../theme.dart';
 import 'login_widgets.dart';
+import '../../services/firestore_service.dart';
 
 class FamilySetupScreen extends StatefulWidget {
   final String uid;
@@ -22,9 +23,26 @@ class FamilySetupScreen extends StatefulWidget {
 }
 
 class _FamilySetupScreenState extends State<FamilySetupScreen> {
-  
+  final _firestoreService = FirestoreService();
 
-  bool _isCreating = true; 
+  Future<void> _createBirthdayEventIfNeeded(String houseId) async {
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.uid)
+        .get();
+    final data = userDoc.data();
+    final birthdayTs = data?['birthday'] ?? data?['dateOfBirth'];
+    if (birthdayTs is! Timestamp) return;
+
+    await _firestoreService.addBirthdayEvent(
+      houseId: houseId,
+      currentUserId: widget.uid,
+      userName: widget.userName,
+      birthday: birthdayTs.toDate(),
+    );
+  }
+
+  bool _isCreating = true;
   final _familyNameCtrl = TextEditingController();
   final _inviteCodeCtrl = TextEditingController();
 
@@ -96,7 +114,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
           .collection('users')
           .doc(widget.uid)
           .update({'houseId': _createdHouseId});
-      
+      await _createBirthdayEventIfNeeded(_createdHouseId!);
     } catch (_) {
       setState(() => _error = 'Something went wrong. Please try again.');
       if (mounted) setState(() => _loading = false);
@@ -141,7 +159,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
         {'houseId': houseDoc.id},
       );
       await batch.commit();
-      
+      await _createBirthdayEventIfNeeded(houseDoc.id);
     } on FirebaseException catch (_) {
       setState(() => _error = 'Could not join family. Please try again.');
     } finally {
