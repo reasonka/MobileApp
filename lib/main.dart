@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'screens/bills/bills_screen.dart';
 import 'screens/calendar/calendar_screen.dart';
 import 'screens/home/home_screen.dart';
+import 'screens/map/map_screen.dart';
 import 'screens/login/login_screen.dart';
 import 'screens/login/profile_setup_screen.dart';
 import 'screens/login/family_setup_screen.dart';
@@ -16,6 +17,7 @@ import 'screens/login/family_setup_screen.dart';
 import 'firebase_options.dart';
 import 'services/sound_service.dart';
 import 'services/notification_service.dart'; 
+import 'services/location_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -155,6 +157,11 @@ const List<_NavItem> _navItems = [
     activeW: 55,
     activeH: 58,
   ),
+  _NavItem(
+    activeAsset: 'assets/images/nav/map_active.svg',
+    inactiveAsset: 'assets/images/nav/map_inactive.svg',
+    inactiveW: 44, inactiveH: 44, activeW: 56, activeH: 58,
+  ),
 ];
 
 // ─────────────────────────────────────────────
@@ -181,22 +188,28 @@ class _RootNavigationState extends State<RootNavigation>
   int _current  = 0;
   int _previous = 0;
 
-  late final List<AnimationController> _controllers = List.generate(
-    _navItems.length,
-    (_) => AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-      lowerBound: 0.0,
-      upperBound: 2.0,
-    ),
-  );
+  late final List<AnimationController> _controllers;
 
   @override
   void initState() {
     super.initState();
+    _controllers = List.generate(
+      _navItems.length,
+      (_) => AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 300),
+        lowerBound: 0.0,
+        upperBound: 2.0,
+      ),
+    );
     for (int i = 0; i < _controllers.length; i++) {
       _controllers[i].value = (i == 0) ? 1.0 : 2.0;
     }
+
+    LocationService.instance.start(
+      userId: widget.userId,
+      houseId: widget.houseId,
+    );
   }
 
   @override
@@ -204,6 +217,7 @@ class _RootNavigationState extends State<RootNavigation>
     for (final c in _controllers) {
       c.dispose();
     }
+    LocationService.instance.stop();
     super.dispose();
   }
 
@@ -238,13 +252,14 @@ class _RootNavigationState extends State<RootNavigation>
   }
 
   Widget _buildScreen(int index) {
-    switch (index) {
-      case 0:  return HomeScreen(userId: widget.userId, houseId: widget.houseId);
-      case 1:  return BillsScreen(houseId: widget.houseId, currentUserId: widget.userId, houseName: '', avatarIndex: 0);
-      case 2:  return CalendarScreen(houseId: widget.houseId, currentUserId: widget.userId, houseName: '', avatarIndex: 0);
-      default: return const _PlaceholderScreen(label: '?');
-    }
+  switch (index) {
+    case 0: return HomeScreen(userId: widget.userId, houseId: widget.houseId);
+    case 1: return BillsScreen(houseId: widget.houseId, currentUserId: widget.userId, houseName: '', avatarIndex: 0);
+    case 2: return CalendarScreen(houseId: widget.houseId, currentUserId: widget.userId, houseName: '', avatarIndex: 0);
+    case 3: return MapScreen(houseId: widget.houseId, currentUserId: widget.userId);
+    default: return const _PlaceholderScreen(label: '?');
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -285,7 +300,11 @@ class _RootNavigationState extends State<RootNavigation>
 // BELT-CONVEYOR NAV BAR
 // ─────────────────────────────────────────────
 
-class _BeltNavBar extends StatefulWidget {
+// ─────────────────────────────────────────────
+// RESPONSIVE NAV BAR (replaces belt-conveyor version)
+// ─────────────────────────────────────────────
+
+class _BeltNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onNavigate;
 
@@ -294,160 +313,93 @@ class _BeltNavBar extends StatefulWidget {
     required this.onNavigate,
   });
 
-  @override
-  State<_BeltNavBar> createState() => _BeltNavBarState();
-}
-
-class _BeltNavBarState extends State<_BeltNavBar>
-    with SingleTickerProviderStateMixin {
-
-  // Figma nav panel: 360×75, r=30, three 120px slots
-  static const double slotW = 120.0;
-  static const double slotH = 58.0;
-  static const double _barW = slotW * 3;
   static const double _barH = 75.0;
   static const double _barRadius = 30.0;
-
-  late final AnimationController _ctrl;
-  late Animation<double> _anim;
-  double _offset = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl   = AnimationController(vsync: this, duration: const Duration(milliseconds: 320));
-    _offset = _targetFor(widget.currentIndex);
-    _anim   = AlwaysStoppedAnimation(_offset);
-  }
-
-  @override
-  void didUpdateWidget(_BeltNavBar old) {
-    super.didUpdateWidget(old);
-    if (old.currentIndex != widget.currentIndex) {
-      _slideToIndex(widget.currentIndex, old.currentIndex);
-    }
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  double _targetFor(int i) {
-    const int middle = 15;
-    return -((middle + i) * slotW);
-  }
-
-  void _slideToIndex(int to, int from) {
-    final int n  = _navItems.length;
-    int delta    = to - from;
-    if (delta >  n ~/ 2) delta -= n;
-    if (delta < -(n ~/ 2)) delta += n;
-
-    final double fromOff = _offset;
-    final double toOff   = fromOff + delta * slotW * -1;
-
-    _ctrl.reset();
-    _anim = Tween<double>(begin: fromOff, end: toOff).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOutCubic),
-    );
-    _ctrl.forward().then((_) {
-      _offset = _targetFor(to);
-      _anim   = AlwaysStoppedAnimation(_offset);
-      if (mounted) setState(() {});
-    });
-    _offset = toOff;
-  }
-
-  void _onTap(TapUpDetails d) {
-    final int n = _navItems.length;
-    if (d.localPosition.dx < _barW / 2) {
-      widget.onNavigate((widget.currentIndex - 1 + n) % n);
-    } else {
-      widget.onNavigate((widget.currentIndex + 1) % n);
-    }
-  }
+  static const double _horizontalMargin = 16.0;
 
   @override
   Widget build(BuildContext context) {
-    final int n = _navItems.length;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double barWidth = screenWidth - (_horizontalMargin * 2);
+    final double slotW = barWidth / _navItems.length;
 
     return SafeArea(
       top: false,
       child: Center(
-        child: GestureDetector(
-          onTapUp: _onTap,
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 14),
-            width: _barW,
-            height: _barH,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(_barRadius),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(_barRadius),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(_barRadius),
-                    color: const Color(0xFF161823).withValues(alpha: 0.42),
-                    gradient: RadialGradient(
-                      center: Alignment.center,
-                      radius: 1.1,
-                      colors: [
-                        const Color(0x33E3F6FF),
-                        const Color(0x1AD7D7D7),
-                        const Color(0x33161823),
-                      ],
-                      stops: const [0.0, 0.55, 1.0],
-                    ),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.16),
-                      width: 1,
-                    ),
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      AnimatedBuilder(
-                        animation: _anim,
-                        builder: (_, __) {
-                          final double dx =
-                              _anim.value + (_barW / 2) - (slotW / 2);
-
-                          final List<Widget> slots = List.generate(30, (i) {
-                            final int idx = i % n;
-                            final bool active = idx == widget.currentIndex;
-                            return _Slot(
-                              item: _navItems[idx],
-                              active: active,
-                            );
-                          });
-
-                          return Transform.translate(
-                            offset: Offset(dx, 0),
-                            child: OverflowBox(
-                              maxWidth: double.infinity,
-                              alignment: Alignment.centerLeft,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: slots,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          width: barWidth,
+          height: _barH,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(_barRadius),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.4),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(_barRadius),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(_barRadius),
+                  color: const Color(0xFF161823).withValues(alpha: 0.42),
+                  gradient: RadialGradient(
+                    center: Alignment.center,
+                    radius: 1.1,
+                    colors: const [
+                      Color(0x33E3F6FF),
+                      Color(0x1AD7D7D7),
+                      Color(0x33161823),
                     ],
+                    stops: const [0.0, 0.55, 1.0],
                   ),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.16),
+                    width: 1,
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 280),
+                      curve: Curves.easeInOutCubic,
+                      left: currentIndex * slotW + (slotW - slotW * 0.78) / 2,
+                      top: (_barH - 58) / 2,
+                      child: Container(
+                        width: slotW * 0.78,
+                        height: 58,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE040FB).withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFFE040FB).withValues(alpha: 0.35),
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: List.generate(_navItems.length, (i) {
+                        final bool active = i == currentIndex;
+                        return SizedBox(
+                          width: slotW,
+                          height: _barH,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => onNavigate(i),
+                            child: Center(
+                              child: _Slot(item: _navItems[i], active: active),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -459,7 +411,7 @@ class _BeltNavBarState extends State<_BeltNavBar>
 }
 
 // ─────────────────────────────────────────────
-// SLOT — single icon cell on the belt
+// SLOT — single icon cell on the bar
 // ─────────────────────────────────────────────
 
 class _Slot extends StatelessWidget {
@@ -473,22 +425,16 @@ class _Slot extends StatelessWidget {
     final w = active ? item.activeW : item.inactiveW;
     final h = active ? item.activeH : item.inactiveH;
 
-    return SizedBox(
-      width: _BeltNavBarState.slotW,
-      height: _BeltNavBarState.slotH,
-      child: Center(
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOutBack,
-          width: w,
-          height: h,
-          child: SvgPicture.asset(
-            active ? item.activeAsset : item.inactiveAsset,
-            width: w,
-            height: h,
-            fit: BoxFit.contain,
-          ),
-        ),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutBack,
+      width: w,
+      height: h,
+      child: SvgPicture.asset(
+        active ? item.activeAsset : item.inactiveAsset,
+        width: w,
+        height: h,
+        fit: BoxFit.contain,
       ),
     );
   }

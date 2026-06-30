@@ -5,52 +5,76 @@ class SoundService {
   SoundService._();
   static final SoundService instance = SoundService._();
 
-  final _pop1 = AudioPlayer();
-  final _pop2 = AudioPlayer();
-  final _done = AudioPlayer();
-  final _del  = AudioPlayer();
+  static const _poolSize = 3;
+
+  final List<AudioPlayer> _popPlayers = List.generate(_poolSize, (_) => AudioPlayer());
+  final List<AudioPlayer> _donePlayers = List.generate(_poolSize, (_) => AudioPlayer());
+  final List<AudioPlayer> _delPlayers = List.generate(_poolSize, (_) => AudioPlayer());
+  final List<AudioPlayer> _swipePlayers = List.generate(_poolSize, (_) => AudioPlayer());
+
+  int _popIndex = 0;
+  int _doneIndex = 0;
+  int _delIndex = 0;
+  int _swipeIndex = 0;
+
   final _random = Random();
-  final _swipe = AudioPlayer();
 
-  
+  List<AudioPlayer> get _allPlayers => [
+        ..._popPlayers,
+        ..._donePlayers,
+        ..._delPlayers,
+        ..._swipePlayers,
+      ];
+
   Future<void> preload() async {
-  await _pop1.setVolume(0);
-  await _pop2.setVolume(0);
-  await _done.setVolume(0);
-  await _del.setVolume(0);
-  await _swipe.setVolume(0);
+    for (final p in _allPlayers) {
+      await p.setVolume(0);
+      await p.setReleaseMode(ReleaseMode.stop);
+    }
 
-  await _pop1.play(AssetSource('sounds/bubblePop.mp3'));
-  await _pop2.play(AssetSource('sounds/bubblePop2.mp3'));
-  await _done.play(AssetSource('sounds/done.mp3'));
-  await _del.play(AssetSource('sounds/delete.mp3'));
-  await _swipe.play(AssetSource('sounds/swipe.mp3'));
+    await Future.wait([
+      for (final p in _popPlayers) p.play(AssetSource('sounds/bubblePop.mp3')),
+      for (final p in _donePlayers) p.play(AssetSource('sounds/done.mp3')),
+      for (final p in _delPlayers) p.play(AssetSource('sounds/delete.mp3')),
+      for (final p in _swipePlayers) p.play(AssetSource('sounds/swipe.mp3')),
+    ]);
 
-  await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 500));
 
-  await _pop1.setVolume(1);
-  await _pop2.setVolume(1);
-  await _done.setVolume(1);
-  await _del.setVolume(1);
-  await _swipe.setVolume(1); 
-}
+    for (final p in _allPlayers) {
+      await p.stop();
+      await p.setVolume(1);
+    }
+  }
 
   Future<void> playPop() async {
-  final sound = _random.nextBool()
-      ? 'sounds/bubblePop.mp3'
-      : 'sounds/bubblePop2.mp3';
-  await _pop1.play(AssetSource(sound));
-}
+    final sound = _random.nextBool()
+        ? 'sounds/bubblePop.mp3'
+        : 'sounds/bubblePop2.mp3';
+    final player = _popPlayers[_popIndex];
+    _popIndex = (_popIndex + 1) % _poolSize;
+    await player.stop();
+    await player.play(AssetSource(sound));
+  }
 
-Future<void> playDone() async {
-  await _done.play(AssetSource('sounds/done.mp3'));
-}
+  Future<void> playDone() async {
+    final player = _donePlayers[_doneIndex];
+    _doneIndex = (_doneIndex + 1) % _poolSize;
+    await player.stop();
+    await player.play(AssetSource('sounds/done.mp3'));
+  }
 
-Future<void> playDelete() async {
-  await _del.play(AssetSource('sounds/delete.mp3'));
-}
+  Future<void> playDelete() async {
+    final player = _delPlayers[_delIndex];
+    _delIndex = (_delIndex + 1) % _poolSize;
+    await player.stop();
+    await player.play(AssetSource('sounds/delete.mp3'));
+  }
 
-Future<void> playSwipe() async {
-  await _swipe.play(AssetSource('sounds/swipe.mp3'));
-}
+  Future<void> playSwipe() async {
+    final player = _swipePlayers[_swipeIndex];
+    _swipeIndex = (_swipeIndex + 1) % _poolSize;
+    await player.stop();
+    await player.play(AssetSource('sounds/swipe.mp3'));
+  }
 }
