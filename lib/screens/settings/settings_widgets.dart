@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/sound_service.dart';
 
-/// Design tokens from the Figma Settings screen (node 88:435).
+
 class SettingsTokens {
   static const screenBg = Color(0xFF161823);
   static const horizontalPadding = 20.0;

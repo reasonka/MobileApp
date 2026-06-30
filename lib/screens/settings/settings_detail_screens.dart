@@ -295,7 +295,7 @@ class SettingsChoiceRow extends StatelessWidget {
   }
 }
 
-// ── Notifications ────────────────────────────────────────────────────────────
+
 
 class NotificationsSettingsScreen extends StatefulWidget {
   const NotificationsSettingsScreen({super.key});
@@ -357,7 +357,7 @@ class _NotificationsSettingsScreenState
   }
 }
 
-// ── Security ─────────────────────────────────────────────────────────────────
+
 
 class SecuritySettingsScreen extends StatefulWidget {
   const SecuritySettingsScreen({super.key});
@@ -478,7 +478,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
   }
 }
 
-// ── Privacy ──────────────────────────────────────────────────────────────────
+
 
 class PrivacySettingsScreen extends StatefulWidget {
   const PrivacySettingsScreen({super.key});
@@ -543,7 +543,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
   }
 }
 
-// ── Theme ────────────────────────────────────────────────────────────────────
+
 
 enum _AppTheme { dark, light, system }
 
@@ -615,7 +615,7 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
   }
 }
 
-// ── Help ─────────────────────────────────────────────────────────────────────
+
 
 class HelpSettingsScreen extends StatefulWidget {
   const HelpSettingsScreen({super.key});
@@ -716,7 +716,7 @@ class _HelpSettingsScreenState extends State<HelpSettingsScreen> {
   }
 }
 
-// ── Add account ──────────────────────────────────────────────────────────────
+
 
 class AddAccountSettingsScreen extends StatelessWidget {
   const AddAccountSettingsScreen({super.key});

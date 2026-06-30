@@ -33,7 +33,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   DateTime _selectedDay = DateTime.now();
   late Stream<List<EventModel>> _eventsStream;
 
-  // ── colours ────────────────────────────────────────────────────────────────
+  
   static const _pink    = Color(0xFFB721A9);
   static const _bg      = Color(0xFF000000);
   static const _dimText = Color(0xFF555577);
@@ -44,7 +44,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _eventsStream = _firestoreService.eventsStream(widget.houseId);
   }
 
-  // ── helpers ────────────────────────────────────────────────────────────────
+  
 
   String get _weekRangeLabel {
     final now    = DateTime.now();
@@ -64,20 +64,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
         (i) => DateTime(month.year, month.month, i + 1));
   }
 
-  /// Nearest → furthest for events that haven't happened yet,
-  /// then done events at the bottom (most recently done first).
+  
+  
    List<EventModel> _sortEventsForList(List<EventModel> events) {
     final now   = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    // FIXED: Nearest -> Furthest for upcoming
+    
     final upcoming = events
         .where((e) =>
             !DateTime(e.date.year, e.date.month, e.date.day).isBefore(today))
         .toList()
       ..sort((a, b) => a.date.compareTo(b.date));
 
-    // FIXED: Done events at the bottom (most recently done first)
+    
     final done = events
         .where((e) =>
             DateTime(e.date.year, e.date.month, e.date.day).isBefore(today))
@@ -122,7 +122,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
-  // ── build ──────────────────────────────────────────────────────────────────
+  
 
   @override
   Widget build(BuildContext context) {
@@ -153,20 +153,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
           return CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // ── app bar ────────────────────────────────────────────
+              
               HouseAppBar(
                 houseId: widget.houseId,
                 currentUserId: widget.currentUserId,
                 weekRangeLabel: _weekRangeLabel,
               ),
 
-              // ── month selector ─────────────────────────────────────
+              
               SliverToBoxAdapter(child: _buildMonthHeader()),
 
-              // ── weekday labels ─────────────────────────────────────
+              
               SliverToBoxAdapter(child: _buildWeekdayRow()),
 
-              // ── day grid ───────────────────────────────────────────
+              
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -174,18 +174,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ),
               ),
 
-              // ── divider ────────────────────────────────────────────
+              
               const SliverToBoxAdapter(
                 child: Divider(
                     color: Color(0xFF1A1A2E), 
                     thickness: 1, 
-                    height: 8, // CHANGED: Reduced from 24 to tighten spacing
+                    height: 8, 
                 ),
               ),
 
-              // ── event panel: bounded + internally scrollable ───────
+              
               SliverFillRemaining(
-                hasScrollBody: false, // CHANGED: Ensures the column correctly fills remaining space
+                hasScrollBody: false, 
                 child: _buildEventPanel(context, selectedEvents, sortedAllEvents),
               ),
             ],
@@ -195,7 +195,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  // ── month header ───────────────────────────────────────────────────────────
+  
 
   Widget _buildMonthHeader() {
     final label = DateFormat('MMMM yyyy').format(_focusedDay).toUpperCase();
@@ -248,7 +248,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  // ── weekday row ────────────────────────────────────────────────────────────
+  
 
   Widget _buildWeekdayRow() {
     const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
@@ -272,7 +272,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  // ── day grid ───────────────────────────────────────────────────────────────
+  
 
   Widget _buildDayGrid(List<DateTime> days, List<EventModel> events) {
     final paddingCount = days.first.weekday - 1;
@@ -285,7 +285,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       itemCount: days.length + paddingCount,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 7,
-        childAspectRatio: 1.15, // CHANGED: Relaxed from 1.4 to un-squash the numbers
+        childAspectRatio: 1.15, 
         mainAxisSpacing: 0,
         crossAxisSpacing: 0,
       ),
@@ -329,9 +329,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  // ── event panel ────────────────────────────────────────────────────────────
+  
 
-  // Inside _CalendarScreenState in calendar_screen.dart
+  
 
 Widget _buildEventPanel(BuildContext context, List<EventModel> selectedEvents, List<EventModel> allEvents) {
     final screenHeight = MediaQuery.of(context).size.height;
@@ -339,7 +339,7 @@ Widget _buildEventPanel(BuildContext context, List<EventModel> selectedEvents, L
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 1. New Event Button
+        
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 16), 
           child: GestureDetector(
@@ -383,9 +383,9 @@ Widget _buildEventPanel(BuildContext context, List<EventModel> selectedEvents, L
           ),
         ),
 
-        // 2. Dynamically Sized Main Panel (No Expanded widget!)
+        
       Container(
-          height: screenHeight * 0.40, // CHANGED: Reduced from 0.45 to balance the 50:50 screen ratio
+          height: screenHeight * 0.40, 
           width: double.infinity,
           margin: const EdgeInsets.symmetric(horizontal: 10),
           decoration: const BoxDecoration(
@@ -403,10 +403,10 @@ Widget _buildEventPanel(BuildContext context, List<EventModel> selectedEvents, L
                       style: GoogleFonts.poppins(color: const Color(0xFF555577)),
                     ),
                   )
-                : ClipRRect( // CHANGED: Added ClipRRect to mask the scrolling items
-                    borderRadius: BorderRadius.circular(30), // TWEAK THIS: Match this number to your PNG's curve
+                : ClipRRect( 
+                    borderRadius: BorderRadius.circular(30), 
                     child: ListView.builder(
-                      padding: EdgeInsets.zero, // CHANGED: Prevents Flutter from adding hidden scroll padding
+                      padding: EdgeInsets.zero, 
                       shrinkWrap: false,
                       physics: const BouncingScrollPhysics(),
                       itemCount: allEvents.length,

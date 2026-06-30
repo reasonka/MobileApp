@@ -3,17 +3,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class ChoreModel {
   final String choreId;
   final String title;
-  final String assignedTo; // userId
+  final String assignedTo; 
   final String houseId;
   final bool completed;
   final DateTime? completedAt;
   final int proposedXP;
-  final String xpStatus; // 'pending' | 'agreed'
-  final Map<String, int> xpVotes; // userId → suggested XP
-  final int agreedXP; // finalised once all members vote
+  final String xpStatus; 
+  final Map<String, int> xpVotes; 
+  final int agreedXP; 
   final String createdBy;
   final DateTime createdAt;
-  final String weekStart; // "YYYY-MM-DD" Monday of the chore's week
+  final String weekStart; 
 
   const ChoreModel({
     required this.choreId,
@@ -31,7 +31,7 @@ class ChoreModel {
     required this.weekStart,
   });
 
-  /// XP that counts toward the leaderboard.
+  
   int get effectiveXP => xpStatus == 'agreed' ? agreedXP : proposedXP;
 
   factory ChoreModel.fromFirestore(DocumentSnapshot doc) {

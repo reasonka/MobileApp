@@ -26,7 +26,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _db = FirebaseFirestore.instance;
   final _fs = FirestoreService();
 
-  // ── state ──────────────────────────────────────────────────────────────────
+  
   String _name = '';
   String _houseName = '';
   String _inviteCode = '';
@@ -35,7 +35,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _bio;
   bool _loading = true;
 
-  // ── colours (match app palette) ───────────────────────────────────────────
+  
   static const _bg        = Color(0xFF161823);
   static const _card      = Color(0xFF1A1A2E);
   static const _pink      = Color(0xFFE040FB);
@@ -65,7 +65,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  // ── helpers ────────────────────────────────────────────────────────────────
+  
 
   String _fmtDob(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')} / '
@@ -115,7 +115,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ── edit name ──────────────────────────────────────────────────────────────
+  
 
   void _editName() {
     final ctrl = TextEditingController(text: _name);
@@ -198,7 +198,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ── edit bio ───────────────────────────────────────────────────────────────
+  
 
   void _editBio() {
     final ctrl = TextEditingController(text: _bio ?? '');
@@ -283,7 +283,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ── edit date of birth ─────────────────────────────────────────────────────
+  
 
   Future<void> _editDob() async {
     final picked = await showDatePicker(
@@ -311,7 +311,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _dateOfBirth = picked);
   }
 
-  // ── QR sheet ───────────────────────────────────────────────────────────────
+  
 
   void _showQr() {
   showModalBottomSheet(
@@ -365,7 +365,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   );
 }
 
-  // ── avatar picker ──────────────────────────────────────────────────────────
+  
 
   void _pickAvatar() {
     showModalBottomSheet(
@@ -427,7 +427,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ── build ──────────────────────────────────────────────────────────────────
+  
   Widget _dragHandle() => Container(
       width: 40,
       height: 4,
@@ -445,12 +445,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ? const Center(child: CircularProgressIndicator(color: _pink))
           : CustomScrollView(
               slivers: [
-                // ── header ─────────────────────────────────────────────────
+                
                 SliverToBoxAdapter(
                   child: _buildHeader(),
                 ),
 
-                // ── info rows ──────────────────────────────────────────────
+                
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
@@ -562,7 +562,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ── header widget ──────────────────────────────────────────────────────────
+  
 
   Widget _buildHeader() {
     return Container(
@@ -578,7 +578,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: Column(
         children: [
-          // back + qr row
+          
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -587,7 +587,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Container(
                   width: 44,
                   height: 44,
-                  alignment: Alignment.center, // Added to center the SVG
+                  alignment: Alignment.center, 
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.06),
                     borderRadius: BorderRadius.circular(12),
@@ -615,7 +615,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 24),
 
-          // avatar + edit badge
+          
           GestureDetector(
             onTap: _pickAvatar,
             child: Stack(
@@ -641,7 +641,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 14),
 
-          // name
+          
           GestureDetector(
             onTap: _editName,
             child: Row(
@@ -662,7 +662,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 4),
 
-          // house name
+          
           Text(
             _houseName,
             style: GoogleFonts.poppins(fontSize: 14, color: _textSec),
@@ -683,9 +683,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// Reusable sub-widgets
-// ══════════════════════════════════════════════════════════════════════════════
+
+
+
 
 class _InfoSection extends StatelessWidget {
   final String label;
@@ -742,11 +742,11 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10), // Space between bubbles
+      margin: const EdgeInsets.only(bottom: 10), 
       decoration: BoxDecoration(
         image: const DecorationImage(
           image: AssetImage('assets/images/BillSubPanel.png'),
-          fit: BoxFit.fill, // Uses the asset for each row
+          fit: BoxFit.fill, 
         ),
       ),
       child: GestureDetector(
@@ -766,7 +766,7 @@ class _InfoRow extends StatelessWidget {
                     Text(
                       label,
                       style: GoogleFonts.poppins(
-                        fontSize: 14, // Increased from 11
+                        fontSize: 14, 
                         color: const Color(0xFFB0ADCC),
                         fontWeight: FontWeight.w500,
                       ),
@@ -775,7 +775,7 @@ class _InfoRow extends StatelessWidget {
                     Text(
                       value,
                       style: GoogleFonts.poppins(
-                        fontSize: 18, // Increased from 14
+                        fontSize: 18, 
                         color: dimValue ? const Color(0xFF555577) : Colors.white,
                         fontWeight: FontWeight.w600,
                         height: 1.3,

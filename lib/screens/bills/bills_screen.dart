@@ -7,7 +7,7 @@ import '../../widgets/shared_app_bar.dart';
 import '../../services/sound_service.dart';
 import '../home/home_widgets.dart';
 
-// ── Theme ─────────────────────────────────────────────────────────────────────
+
 const _bg         = Color(0xFF0D0D1A);
 const _card       = Color(0xFF1A1A2E);
 const _cardBorder = Color(0xFF2E2E50);
@@ -18,7 +18,7 @@ const _pillBg     = Color(0xFF23233A);
 const _green      = Color(0xFF00C9A7);
 const _greenBg    = Color(0xFF00695C);
 
-// ── Screen ────────────────────────────────────────────────────────────────────
+
 class BillsScreen extends StatefulWidget {
   final String houseId;
   final String currentUserId;
@@ -147,7 +147,7 @@ class _BillsScreenState extends State<BillsScreen> {
                     weekRangeLabel: _weekRangeLabel,
                   ),
 
-                  // ── Summary cards ──────────────────────────────
+                  
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -173,7 +173,7 @@ class _BillsScreenState extends State<BillsScreen> {
                     ),
                   ),
 
-                  // ── Section heading ────────────────────────────
+                  
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
@@ -188,7 +188,7 @@ class _BillsScreenState extends State<BillsScreen> {
                     ),
                   ),
 
-                  // ── Empty state ────────────────────────────────
+                  
                   if (bills.isEmpty)
                     SliverToBoxAdapter(
                       child: Padding(
@@ -250,7 +250,7 @@ class _BillsScreenState extends State<BillsScreen> {
   }
 }
 
-// ── Summary Card ──────────────────────────────────────────────────────────────
+
 class _SummaryCard extends StatelessWidget {
   final String label;
   final double amount;
@@ -300,7 +300,7 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-// ── Bill Card ─────────────────────────────────────────────────────────────────
+
 class _BillCard extends StatelessWidget {
   final BillModel bill;
   final String currentUserId;
@@ -331,7 +331,7 @@ class _BillCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           child: Stack(
             children: [
-              // Layer 1: background
+              
               Positioned.fill(
                 child: IgnorePointer(
                   child: Image.asset(
@@ -341,7 +341,7 @@ class _BillCard extends StatelessWidget {
                 ),
               ),
 
-              // Layer 2: content
+              
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -432,7 +432,7 @@ class _BillCard extends StatelessWidget {
                     ),
                   ),
 
-                  // Layer 3: sub-panel strip
+                  
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
                         bottom: Radius.circular(18)),
@@ -518,7 +518,7 @@ class _BillCard extends StatelessWidget {
                 ],
               ),
 
-              // Layer 4: border overlay
+              
               Positioned.fill(
                 child: IgnorePointer(
                   child: Container(
@@ -542,7 +542,7 @@ class _BillCard extends StatelessWidget {
   }
 }
 
-// ── Status Pill ───────────────────────────────────────────────────────────────
+
 class _StatusPill extends StatelessWidget {
   final String label;
   final Color color;
@@ -564,7 +564,7 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-// ── Bill Detail Sheet ─────────────────────────────────────────────────────────
+
 class _BillDetailSheet extends StatefulWidget {
   final BillModel bill;
   final String currentUserId;
@@ -664,7 +664,7 @@ class _BillDetailSheetState extends State<_BillDetailSheet> {
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       child: Stack(
         children: [
-          // ── Background + dark overlay ──────────────────────────
+          
           Positioned.fill(
             child: Image.asset('assets/images/BillSubPanel.png',
                 fit: BoxFit.cover),
@@ -679,7 +679,7 @@ class _BillDetailSheetState extends State<_BillDetailSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Handle
+                
                 Center(
                   child: Container(
                     width: 40,
@@ -691,7 +691,7 @@ class _BillDetailSheetState extends State<_BillDetailSheet> {
                   ),
                 ),
 
-                // Header
+                
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -838,7 +838,7 @@ class _BillDetailSheetState extends State<_BillDetailSheet> {
                 ),
                 const SizedBox(height: 20),
 
-                // Paid by
+                
                 _SheetLabel('Paid by'),
                 const SizedBox(height: 8),
                 Wrap(
@@ -893,7 +893,7 @@ class _BillDetailSheetState extends State<_BillDetailSheet> {
                 ),
                 const SizedBox(height: 20),
 
-                // Who needs to pay
+                
                 _SheetLabel('Who needs to pay'),
                 const SizedBox(height: 8),
 
@@ -1031,7 +1031,7 @@ class _BillDetailSheetState extends State<_BillDetailSheet> {
   }
 }
 
-// ── New Bill Sheet ────────────────────────────────────────────────────────────
+
 class _NewBillSheet extends StatefulWidget {
   final String houseId;
   final String currentUserId;
@@ -1125,7 +1125,7 @@ class _NewBillSheetState extends State<_NewBillSheet> {
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       child: Stack(
         children: [
-          // ── Background + dark overlay ──────────────────────────
+          
           Positioned.fill(
             child: Image.asset('assets/images/BillSubPanel.png',
                 fit: BoxFit.cover),
@@ -1362,7 +1362,7 @@ class _NewBillSheetState extends State<_NewBillSheet> {
   }
 }
 
-// ── Sheet Helpers ─────────────────────────────────────────────────────────────
+
 class _SheetLabel extends StatelessWidget {
   final String text;
   const _SheetLabel(this.text);

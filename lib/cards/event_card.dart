@@ -19,7 +19,7 @@ class EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // check if event is passed today
+    
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final eventDate = DateTime(event.date.year, event.date.month, event.date.day);
@@ -77,7 +77,7 @@ class EventCard extends StatelessWidget {
               ],
             ),
           ),
-          // only show edit/delete if the event is not done yet
+          
           if (!isDone) ...[
             IconButton(
               icon: const Icon(Icons.edit, color: Colors.white60, size: 20),
@@ -89,7 +89,7 @@ class EventCard extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
               onPressed: () async {
-                // optional: show a confirmation dialog first
+                
                 
                 SoundService.instance.playDelete();
                 await _firestoreService.deleteEvent(

@@ -12,7 +12,7 @@ class SoundService {
   final _random = Random();
   final _swipe = AudioPlayer();
 
-  /// Call this once in main.dart before runApp()
+  
   Future<void> preload() async {
   await _pop1.setVolume(0);
   await _pop2.setVolume(0);

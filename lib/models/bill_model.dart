@@ -38,7 +38,7 @@ class BillModel {
   final double amount;
   final String paidBy;
   final List<String> splitBetween;
-  final List<String> settledBy; // ← NEW: UIDs who paid their share
+  final List<String> settledBy; 
   final BillCategory category;
   final DateTime createdAt;
   final String houseId;
@@ -56,7 +56,7 @@ class BillModel {
 
   double get perPersonAmount => amount / splitBetween.length;
 
-  /// Bill is fully settled when every non-payer has marked as paid
+  
   bool get isFullySettled {
     final debtors = splitBetween.where((id) => id != paidBy).toList();
     if (debtors.isEmpty) return true;

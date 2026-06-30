@@ -8,7 +8,7 @@ import '../../widgets/shared_app_bar.dart';
 import '../../services/sound_service.dart';
 
 
-// ── Theme ─────────────────────────────────────────────────────────────────────
+
 const _bg         = Color(0xFF0D0D1A);
 const _card       = Color(0xFF1A1A2E);
 const _cardBorder = Color(0xFF2E2E50);
@@ -20,7 +20,7 @@ const _pillBg     = Color(0xFF23233A);
 const _green      = Color(0xFF00C9A7);
 const _greenBg    = Color(0xFF00695C);
 
-// ── Screen ────────────────────────────────────────────────────────────────────
+
 class BillsScreen extends StatefulWidget {
   final String houseId;
   final String currentUserId;
@@ -147,7 +147,7 @@ class _BillsScreenState extends State<BillsScreen> {
                 weekRangeLabel: _weekRangeLabel,
               ),
 
-              // ── Summary cards ─────────────────────────────────
+              
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -181,7 +181,7 @@ class _BillsScreenState extends State<BillsScreen> {
                 ),
               ),
 
-              // ── Section heading ───────────────────────────────
+              
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
@@ -196,7 +196,7 @@ class _BillsScreenState extends State<BillsScreen> {
                 ),
               ),
 
-              // ── Empty state ───────────────────────────────────
+              
               if (bills.isEmpty)
                 SliverToBoxAdapter(
                   child: Padding(
@@ -236,7 +236,7 @@ class _BillsScreenState extends State<BillsScreen> {
                   ),
                 ),
 
-              // ── New bill button ───────────────────────────────
+              
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
@@ -258,7 +258,7 @@ class _BillsScreenState extends State<BillsScreen> {
   }
 }
 
-// ── Summary Card ──────────────────────────────────────────────────────────────
+
 class _SummaryCard extends StatelessWidget {
   final String label;
   final double amount;
@@ -314,7 +314,7 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-// ── Bill Card ─────────────────────────────────────────────────────────────────
+
 class _BillCard extends StatelessWidget {
   final BillModel bill;
   final String currentUserId;
@@ -345,7 +345,7 @@ class _BillCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           child: Stack(
             children: [
-              // ── Layer 1: BillMainPanel background ─────────────────
+              
           Positioned.fill(
             child: IgnorePointer(     
             child: Image.asset(
@@ -354,11 +354,11 @@ class _BillCard extends StatelessWidget {
             ),
             )
           ),
-                           // ── Layer 2: card content ─────────────────────────────
+                           
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Top row
+                  
                   Padding(
                     padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
                     child: Row(
@@ -450,7 +450,7 @@ class _BillCard extends StatelessWidget {
                     ),
                   ),
 
-                  // ── Layer 3: BillSubPanel bottom strip ────────────
+                  
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
                       bottom: Radius.circular(18),
@@ -469,7 +469,7 @@ class _BillCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 14),
                             child: Row(
                               children: [
-                                // Left spacer (same width as status pill area)
+                                
                                 const SizedBox(width: 90),
                                 Expanded(
                                   child: FutureBuilder<Map<String, dynamic>>(
@@ -545,7 +545,7 @@ class _BillCard extends StatelessWidget {
                       ],
                     ),
                   ),
-              // ── Layer 4: border overlay ───────────────────────────
+              
               Positioned.fill(
                 child: Container(
                   decoration: BoxDecoration(
@@ -569,7 +569,7 @@ class _BillCard extends StatelessWidget {
   }
 }
 
-// ── Status Pill ───────────────────────────────────────────────────────────────
+
 class _StatusPill extends StatelessWidget {
   final String label;
   final Color color;
@@ -591,7 +591,7 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-// ── New Bill Button ───────────────────────────────────────────────────────────
+
 class _NewBillButton extends StatelessWidget {
   final VoidCallback onTap;
   const _NewBillButton({required this.onTap});
@@ -627,7 +627,7 @@ class _NewBillButton extends StatelessWidget {
   }
 }
 
-// ── Bill Detail Sheet ─────────────────────────────────────────────────────────
+
 class _BillDetailSheet extends StatefulWidget {
   final BillModel bill;
   final String currentUserId;
@@ -702,26 +702,26 @@ class _BillDetailSheetState extends State<_BillDetailSheet> {
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       child: Stack(
         children: [
-          // Sheet background image
+          
           Positioned.fill(
             child: Image.asset(
               'assets/images/BillSubPanel.png',
               fit: BoxFit.cover,
             ),
           ),
-          // Dark overlay so text is readable
+          
           Positioned.fill(
             child: Container(color: _card.withOpacity(0.85)),
           ),
 
-          // Content
+          
           SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(24, 20, 24, 24 + bottom),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Handle
+                
                 Center(
                   child: Container(
                     width: 40,
@@ -733,7 +733,7 @@ class _BillDetailSheetState extends State<_BillDetailSheet> {
                   ),
                 ),
 
-                // ── Header ────────────────────────────────────────
+                
                 Row(
                   children: [
                     Text(_bill.category.emoji,
@@ -760,7 +760,7 @@ class _BillDetailSheetState extends State<_BillDetailSheet> {
                 ),
                 const SizedBox(height: 20),
 
-                // ── Paid by (editable) ────────────────────────────
+                
                 _SheetLabel('Paid by'),
                 const SizedBox(height: 8),
                 Wrap(
@@ -812,7 +812,7 @@ class _BillDetailSheetState extends State<_BillDetailSheet> {
                 ),
                 const SizedBox(height: 20),
 
-                // ── Who needs to pay ──────────────────────────────
+                
                 _SheetLabel('Who needs to pay'),
                 const SizedBox(height: 8),
 
@@ -873,7 +873,7 @@ class _BillDetailSheetState extends State<_BillDetailSheet> {
                               ],
                             ),
                           ),
-                          // Checkmark: debtor marks own, payer can mark anyone
+                          
                           if (isMe ||
                               _bill.paidBy == widget.currentUserId)
                             GestureDetector(
@@ -958,7 +958,7 @@ class _BillDetailSheetState extends State<_BillDetailSheet> {
   }
 }
 
-// ── New Bill Sheet ────────────────────────────────────────────────────────────
+
 class _NewBillSheet extends StatefulWidget {
   final String houseId;
   final String currentUserId;
@@ -1037,26 +1037,26 @@ class _NewBillSheetState extends State<_NewBillSheet> {
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       child: Stack(
         children: [
-          // Sheet background image
+          
           Positioned.fill(
             child: Image.asset(
               'assets/images/BillSubPanel.png',
               fit: BoxFit.cover,
             ),
           ),
-          // Dark overlay
+          
           Positioned.fill(
             child: Container(color: _card.withOpacity(0.85)),
           ),
 
-          // Content
+          
           SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(24, 20, 24, 24 + bottom),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Handle
+                
                 Center(
                   child: Container(
                     width: 40,
@@ -1077,7 +1077,7 @@ class _NewBillSheetState extends State<_NewBillSheet> {
                 ),
                 const SizedBox(height: 22),
 
-                // Amount
+                
                 _SheetLabel('Amount (\$)'),
                 const SizedBox(height: 8),
                 _StyledTextField(
@@ -1088,7 +1088,7 @@ class _NewBillSheetState extends State<_NewBillSheet> {
                 ),
                 const SizedBox(height: 18),
 
-                // Category
+                
                 _SheetLabel('Category'),
                 const SizedBox(height: 10),
                 SizedBox(
@@ -1138,7 +1138,7 @@ class _NewBillSheetState extends State<_NewBillSheet> {
                 ),
                 const SizedBox(height: 20),
 
-                // Paid by
+                
                 _SheetLabel('Paid by'),
                 const SizedBox(height: 10),
                 Wrap(
@@ -1188,7 +1188,7 @@ class _NewBillSheetState extends State<_NewBillSheet> {
                 ),
                 const SizedBox(height: 20),
 
-                // Split between
+                
                 _SheetLabel('Split between'),
                 const SizedBox(height: 4),
                 Text(
@@ -1251,7 +1251,7 @@ class _NewBillSheetState extends State<_NewBillSheet> {
                 ),
                 const SizedBox(height: 28),
 
-                // Submit
+                
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -1291,7 +1291,7 @@ class _NewBillSheetState extends State<_NewBillSheet> {
   }
 }
 
-// ── Sheet Helpers ─────────────────────────────────────────────────────────────
+
 class _SheetLabel extends StatelessWidget {
   final String text;
   const _SheetLabel(this.text);

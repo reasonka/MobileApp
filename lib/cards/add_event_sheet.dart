@@ -6,16 +6,16 @@ import '../services/sound_service.dart';
 class AddEventSheet extends StatefulWidget {
   final String houseId;
   final String currentUserId;
-  final DateTime? initialDate; // 1. Add this variable
+  final DateTime? initialDate; 
 
   const AddEventSheet({
     super.key,
     required this.houseId,
     required this.currentUserId,
-    this.initialDate, // 2. Add to constructor
+    this.initialDate, 
   });
 
-  // 3. Update the show method to accept the date
+  
   static void show(BuildContext context, String houseId, String currentUserId, {DateTime? initialDate}) {
   showModalBottomSheet(
     context: context,
@@ -41,13 +41,13 @@ class _AddEventSheetState extends State<AddEventSheet> {
   final _titleController = TextEditingController();
   final _firestoreService = FirestoreService();
   
-  // 4. Change this to a 'late' variable
+  
   late DateTime _selectedDate; 
 
   @override
   void initState() {
     super.initState();
-    // 5. Set the selected date to the one passed in, or default to today if null
+    
     _selectedDate = widget.initialDate ?? DateTime.now();
   }
 
@@ -97,10 +97,10 @@ Widget build(BuildContext context) {
       ),
     ),
     child: Column(
-      mainAxisSize: MainAxisSize.min, // Shrinks to fit content
+      mainAxisSize: MainAxisSize.min, 
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 20), // Spacing for the top of the PNG
+        const SizedBox(height: 20), 
         const Text(
           "New event",
           style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
@@ -114,7 +114,7 @@ Widget build(BuildContext context) {
             hintText: "Event title",
             hintStyle: const TextStyle(color: Colors.grey),
             filled: true,
-            fillColor: Colors.black.withOpacity(0.2), // Blend with panel
+            fillColor: Colors.black.withOpacity(0.2), 
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
           ),
         ),
@@ -146,7 +146,7 @@ Widget build(BuildContext context) {
           ),
           child: const Text("Save Event", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
         ),
-        const SizedBox(height: 40), // Spacing for the bottom of the PNG
+        const SizedBox(height: 40), 
       ],
     ),
   );

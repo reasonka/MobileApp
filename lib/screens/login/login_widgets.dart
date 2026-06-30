@@ -4,7 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme.dart';
 
-/// Design tokens from the Figma MobileApp login screen (node 88:87).
+
 class LoginTokens {
   static const screenBg = Color(0xFF161823);
   static const horizontalPadding = 41.0;
@@ -37,7 +37,7 @@ class LoginTokens {
   );
 }
 
-/// Purple/magenta top and green bottom glow from the Figma background SVG.
+
 class LoginScreenBackground extends StatelessWidget {
   const LoginScreenBackground({super.key});
 
@@ -61,7 +61,7 @@ class LoginScreenBackground extends StatelessWidget {
   }
 }
 
-/// Cat logo from the Figma login page.
+
 class LoginCatLogo extends StatelessWidget {
   const LoginCatLogo({super.key});
 
@@ -79,7 +79,7 @@ class LoginCatLogo extends StatelessWidget {
   }
 }
 
-/// Centered all-caps title (Poppins ExtraBold 20).
+
 class LoginScreenTitle extends StatelessWidget {
   final String text;
 
@@ -100,7 +100,7 @@ class LoginScreenTitle extends StatelessWidget {
   }
 }
 
-/// Glass-style gradient input field matching the Figma Email/Password panels.
+
 class LoginGradientField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
@@ -178,7 +178,7 @@ class LoginGradientField extends StatelessWidget {
   }
 }
 
-/// Tappable field shell for non-text inputs (e.g. date picker).
+
 class LoginGradientFieldShell extends StatelessWidget {
   final String label;
   final Widget? trailing;
@@ -257,7 +257,7 @@ class LoginErrorBanner extends StatelessWidget {
   }
 }
 
-/// Primary gradient CTA used across the login flow.
+
 class LoginPrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -317,7 +317,7 @@ class LoginPrimaryButton extends StatelessWidget {
   }
 }
 
-/// Circular Apple / Google sign-in buttons.
+
 class LoginSocialAuthButton extends StatelessWidget {
   final String assetPath;
   final VoidCallback? onTap;
@@ -344,7 +344,7 @@ class LoginSocialAuthButton extends StatelessWidget {
   }
 }
 
-/// "Or continue with" label plus Apple / Google buttons from Figma.
+
 class LoginSocialAuthRow extends StatelessWidget {
   const LoginSocialAuthRow({super.key});
 
@@ -380,7 +380,7 @@ class LoginSocialAuthRow extends StatelessWidget {
   }
 }
 
-/// Sign-in / sign-up toggle link at the bottom of the login screen.
+
 class LoginToggleLink extends StatelessWidget {
   final bool isSignIn;
   final VoidCallback onTap;

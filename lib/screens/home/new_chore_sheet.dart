@@ -7,9 +7,9 @@ import '../../theme.dart';
 class NewChoreSheet extends StatefulWidget {
   final String userId;
   final String houseId;
-  final List<Map<String, dynamic>> members; // {userId, name, avatarIndex}
+  final List<Map<String, dynamic>> members; 
   final int memberCount;
-  /// Current user's own chores this week (used to enforce the 6-slot limit).
+  
   final List<ChoreModel> myChores;
 
   const NewChoreSheet({
@@ -35,7 +35,7 @@ class _NewChoreSheetState extends State<NewChoreSheet> {
   @override
   void initState() {
     super.initState();
-    _assignedTo = widget.userId; // default: assign to self
+    _assignedTo = widget.userId; 
   }
 
   @override
@@ -59,9 +59,9 @@ class _NewChoreSheetState extends State<NewChoreSheet> {
     final fs = FirestoreService();
 
     try {
-      // If adding this chore would exceed 6 total slots, remove the oldest
-      // completed chore to make room (uncompleted guard already checked in the
-      // button handler before the sheet opened).
+      
+      
+      
       if (widget.myChores.length >= 6) {
         final completed = widget.myChores
             .where((c) => c.completed)
@@ -69,9 +69,9 @@ class _NewChoreSheetState extends State<NewChoreSheet> {
           ..sort((a, b) {
             final aTime = a.completedAt ?? a.createdAt;
             final bTime = b.completedAt ?? b.createdAt;
-            return aTime.compareTo(bTime); // oldest first
+            return aTime.compareTo(bTime); 
           });
-        final toDelete = widget.myChores.length - 5; // make exactly 1 free slot
+        final toDelete = widget.myChores.length - 5; 
         for (int i = 0; i < toDelete && i < completed.length; i++) {
           await fs.deleteChore(completed[i].choreId);
         }
@@ -106,7 +106,7 @@ class _NewChoreSheetState extends State<NewChoreSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Handle
+          
           Center(
             child: Container(
               width: 40,
@@ -135,14 +135,14 @@ class _NewChoreSheetState extends State<NewChoreSheet> {
           ),
           const SizedBox(height: 24),
 
-          // Chore name
+          
           _GradientField(
             controller: _titleCtrl,
             label: 'Chore name',
           ),
           const SizedBox(height: 16),
 
-          // Assign to
+          
           Text(
             'Assign to',
             style: GoogleFonts.poppins(
@@ -198,7 +198,7 @@ class _NewChoreSheetState extends State<NewChoreSheet> {
           ),
           const SizedBox(height: 24),
 
-          // XP slider
+          
           Row(
             children: [
               Text(
@@ -237,7 +237,7 @@ class _NewChoreSheetState extends State<NewChoreSheet> {
           ],
           const SizedBox(height: 20),
 
-          // Submit
+          
           SizedBox(
             width: double.infinity,
             height: 52,

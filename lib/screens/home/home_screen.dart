@@ -27,13 +27,13 @@ class _HomeScreenState extends State<HomeScreen> {
   final _scrollCtrl = ScrollController();
   StreamSubscription? _membersSub;
 
-  List<Map<String, dynamic>> _members = []; // {userId, name, avatarIndex}
+  List<Map<String, dynamic>> _members = []; 
   String _houseName = '';
   String _inviteCode = '';
   bool _initialized = false;
 
-  static const double _fabBottomInset = 123; // nav margin + height + gap (Figma)
-  static const double _navReservedHeight = 89; // nav margin (14) + bar (75)
+  static const double _fabBottomInset = 123; 
+  static const double _navReservedHeight = 89; 
 
   @override
   void initState() {
@@ -54,12 +54,12 @@ void dispose() {
 final List<StreamSubscription> _userSubs = [];
 
 void _listenToMembers() async {
-  // First load to get the list of member IDs
+  
   final members = await _fs.getHouseMemberDetails(widget.houseId);
   if (!mounted) return;
   setState(() => _members = members);
 
-  // Then stream each user doc individually
+  
   for (final m in members) {
     final uid = m['userId'] as String;
     final sub = FirebaseFirestore.instance
@@ -96,7 +96,7 @@ void _listenToMembers() async {
     }
   }
 
-  // ── Week range label ──────────────────────────────────────────────────────────
+  
 
   String get _weekRangeLabel {
     final now = DateTime.now();
@@ -107,14 +107,14 @@ void _listenToMembers() async {
     return '(${fmt(monday)}-${fmt(sunday)})';
   }
 
-  // ── Current user's member data ────────────────────────────────────────────────
+  
 
   Map<String, dynamic> get _myMember => _members.firstWhere(
         (m) => m['userId'] == widget.userId,
         orElse: () => {'userId': widget.userId, 'name': '', 'avatarIndex': 0},
       );
 
-  // ── Build ─────────────────────────────────────────────────────────────────────
+  
 
   @override
   Widget build(BuildContext context) {
@@ -211,7 +211,7 @@ void _listenToMembers() async {
     );
   }
 
-  // ── Pending XP votes strip ────────────────────────────────────────────────────
+  
 
   Widget _buildPendingVotesSection(List<ChoreModel> pending) {
     return Padding(
@@ -256,7 +256,7 @@ void _listenToMembers() async {
   }
 
   Widget _buildVoteCard(ChoreModel chore) {
-    // Find who created it
+    
     final creator = _members.firstWhere(
       (m) => m['userId'] == chore.createdBy,
       orElse: () => {'name': 'Someone'},
@@ -403,11 +403,11 @@ void _listenToMembers() async {
     );
   }
 
-  // ── User chore card ───────────────────────────────────────────────────────────
+  
 
   Widget _buildUserChoreSection(List<ChoreModel> myChores) {
     const avatarSize = 50.0;
-    const avatarOverlap = 15.0; // Figma AIDYNCHORE — avatar sits into card top
+    const avatarOverlap = 15.0; 
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -437,7 +437,7 @@ void _listenToMembers() async {
     );
   }
 
-  // ── Housemates row ────────────────────────────────────────────────────────────
+  
 
   Widget _buildHousematePlaceholders() {
     return Padding(
@@ -563,7 +563,7 @@ void _listenToMembers() async {
     );
   }
 
-  // ── New chore button (with 6-chore limit) ────────────────────────────────────
+  
 
   void _onNewChorePressed(
     List<Map<String, dynamic>> housemates,
@@ -572,7 +572,7 @@ void _listenToMembers() async {
     final uncompleted = myChores.where((c) => !c.completed).length;
 
     if (uncompleted >= 6) {
-      // Cute limit popup
+      
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
@@ -751,11 +751,11 @@ void _listenToMembers() async {
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// Private widgets
-// ══════════════════════════════════════════════════════════════════════════════
 
-// ── Avatar circle ─────────────────────────────────────────────────────────────
+
+
+
+
 
 class _AvatarCircle extends StatelessWidget {
   final int avatarIndex;
@@ -773,7 +773,7 @@ class _AvatarCircle extends StatelessWidget {
   }
 }
 
-// ── Chore card (glass gradient grid) ─────────────────────────────────────────
+
 
 class _ChoreCard extends StatelessWidget {
   final List<ChoreModel> chores;
@@ -803,7 +803,7 @@ class _ChoreCard extends StatelessWidget {
       );
     }
 
-    // Build a 2-column grid of chores
+    
     final rows = <Widget>[];
     for (int i = 0; i < chores.length; i += 2) {
       final left = chores[i];
@@ -908,7 +908,7 @@ class _ChoreCard extends StatelessWidget {
   }
 }
 
-// ── Housemate card (tappable) ─────────────────────────────────────────────────
+
 
 class _HousemateCard extends StatelessWidget {
   final Map<String, dynamic> member;
@@ -974,7 +974,7 @@ class _HousemateCard extends StatelessWidget {
   }
 }
 
-// ── Housemate overlay (read-only chore view) ──────────────────────────────────
+
 
 class _HousemateOverlay extends StatelessWidget {
   final Map<String, dynamic> member;
@@ -1014,7 +1014,7 @@ class _HousemateOverlay extends StatelessWidget {
                 fontSize: 12, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 20),
-          // Read-only chore list
+          
           _ChoreCard(chores: chores, isOwner: false),
           const SizedBox(height: 16),
           TextButton(
@@ -1030,7 +1030,7 @@ class _HousemateOverlay extends StatelessWidget {
   }
 }
 
-// ── Note card ─────────────────────────────────────────────────────────────────
+
 
 class _NoteCard extends StatelessWidget {
   final NoteModel note;
@@ -1089,7 +1089,7 @@ class _NoteCard extends StatelessWidget {
   }
 }
 
-// ── Small button helper ───────────────────────────────────────────────────────
+
 
 class _SmallButton extends StatelessWidget {
   final String label;

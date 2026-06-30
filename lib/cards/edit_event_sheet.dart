@@ -20,7 +20,7 @@ class EditEventSheet extends StatefulWidget {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent, // MUST BE TRANSPARENT
+    backgroundColor: Colors.transparent, 
     builder: (context) => Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: EditEventSheet(event: event, houseId: houseId, currentUserId: currentUserId),

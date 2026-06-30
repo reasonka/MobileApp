@@ -4,10 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import '../login/profile_setup_screen.dart';
 import '../profile_screen.dart';
 import '../../services/sound_service.dart';
-import 'settings_detail_screens.dart';
 import 'settings_widgets.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -69,53 +67,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _open(Widget screen, {bool refreshOnReturn = false}) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => screen),
-    ).then((_) {
-      if (refreshOnReturn && mounted) _load();
-    });
-  }
-
   List<_MenuItem> get _menuItems => [
-        _MenuItem(
-          label: 'Account',
-          icon: 'account',
-          onTap: () => _open(
-            ProfileSetupScreen(
-              uid: widget.userId,
-              email: _auth.currentUser?.email ?? '',
-              isEditing: true,
-            ),
-            refreshOnReturn: true,
-          ),
-        ),
+        _MenuItem(label: 'Account', icon: 'account', onTap: () => _toast('Account')),
         _MenuItem(
           label: 'Notifications',
           icon: 'notifications',
-          onTap: () => _open(const NotificationsSettingsScreen()),
+          onTap: () => _toast('Notifications'),
         ),
         _MenuItem(
           label: 'Security',
           icon: 'security',
-          onTap: () => _open(const SecuritySettingsScreen()),
+          onTap: () => _toast('Security'),
         ),
         _MenuItem(
           label: 'Privacy',
           icon: 'privacy',
-          onTap: () => _open(const PrivacySettingsScreen()),
+          onTap: () => _toast('Privacy'),
         ),
-        _MenuItem(
-          label: 'Theme',
-          icon: 'theme',
-          onTap: () => _open(const ThemeSettingsScreen()),
-        ),
-        _MenuItem(
-          label: 'Help',
-          icon: 'help',
-          onTap: () => _open(const HelpSettingsScreen()),
-        ),
+        _MenuItem(label: 'Theme', icon: 'theme', onTap: () => _toast('Theme')), 
+        _MenuItem(label: 'Help', icon: 'help', onTap: () => _toast('Help')),
       ];
 
   List<_MenuItem> get _filtered => _searchQuery.isEmpty
@@ -128,19 +98,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
     content: Text(
       '$label — coming soon',
-      textAlign: TextAlign.center,         // ← center text
+      textAlign: TextAlign.center,         
       style: GoogleFonts.poppins(
-        fontSize: 18,                      // ← bigger text
+        fontSize: 18,                      
         color: Colors.white,
       ),
     ),
     backgroundColor: _card,
     duration: const Duration(seconds: 2),
-    padding: const EdgeInsets.symmetric(  // ← bigger popup
+    padding: const EdgeInsets.symmetric(  
       horizontal: 24,
       vertical: 20,
     ),
-    behavior: SnackBarBehavior.floating,  // ← floating looks better when bigger
+    behavior: SnackBarBehavior.floating,  
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(16),
     ),
@@ -492,7 +462,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
       ),
-      // Keep this specific icon button for the QR sheet
+      
       GestureDetector(
         onTap: () {
             SoundService.instance.playPop();
@@ -540,12 +510,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               SettingsMenuRow(
                 iconAssetName: 'add_account',
                 label: 'Add account',
-                onTap: () => _open(const AddAccountSettingsScreen()),
+                onTap: () => _toast('Add account'),
               ),
               SettingsMenuRow(
                 iconAssetName: 'logout',
                 label: 'Log Out',
-                onTap: _confirmLogout,
+                onTap: () {
+                  SoundService.instance.playDelete();
+                  _confirmLogout();
+                },
               ),
             ],
             const SizedBox(height: 32),

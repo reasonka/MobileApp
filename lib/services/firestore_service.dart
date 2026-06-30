@@ -7,9 +7,9 @@ import '../models/note_model.dart';
 class FirestoreService {
   final _db = FirebaseFirestore.instance;
 
-  // ── Helpers ──────────────────────────────────────────────────────────────────
+  
 
-  /// Returns "YYYY-MM-DD" for the Monday of the current week.
+  
   static String currentWeekStart() {
     final now = DateTime.now();
     final monday = now.subtract(Duration(days: now.weekday - 1));
@@ -17,7 +17,7 @@ class FirestoreService {
     return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
   }
 
-  // ── User names cache ──────────────────────────────────────────────────────────
+  
 
   final Map<String, String> _nameCache = {};
 
@@ -33,7 +33,7 @@ class FirestoreService {
   Future<String> getUserName(String userId) async {
     if (_nameCache.containsKey(userId)) return _nameCache[userId]!;
     final doc = await _db.collection('users').doc(userId).get();
-    // Profile screens save as 'name'; fall back to 'userName' for older docs
+    
     final name = (doc.data()?['name'] as String?)
         ?? (doc.data()?['userName'] as String?)
         ?? 'Unknown';
@@ -41,14 +41,14 @@ class FirestoreService {
     return name;
   }
 
-  // ── House ────────────────────────────────────────────────────────────────────
+  
 
   Future<Map<String, dynamic>?> getHouseData(String houseId) async {
     final doc = await _db.collection('houses').doc(houseId).get();
     return doc.data();
   }
 
-  /// Returns a list of member profiles: {userId, name, avatarIndex}.
+  
   Future<List<Map<String, dynamic>>> getHouseMemberDetails(String houseId) async {
     final houseDoc = await _db.collection('houses').doc(houseId).get();
     final memberIds = List<String>.from(houseDoc.data()?['members'] ?? []);
@@ -65,24 +65,24 @@ class FirestoreService {
 
     return profiles;
   }
-// ── Leave House ──────────────────────────────────────────────────────────────
+
 
   Future<void> leaveHouse(String userId, String houseId) async {
     final batch = _db.batch();
 
-    // 1. Remove the houseId from the user's document
+    
     batch.update(_db.collection('users').doc(userId), {
       'houseId': FieldValue.delete(),
     });
 
-    // 2. Remove the user from the house's members array
+    
     batch.update(_db.collection('houses').doc(houseId), {
       'members': FieldValue.arrayRemove([userId]),
     });
 
     await batch.commit();
   }
-  // ── Events ───────────────────────────────────────────────────────────────────
+  
 
   Stream<List<EventModel>> eventsStream(String houseId) => _db
       .collection('events')
@@ -95,9 +95,9 @@ Future<void> updateEvent({
     required String eventId,
     required String title,
     required DateTime date,
-    required String houseId, // Kept so your UI parameters don't break
+    required String houseId, 
   }) async {
-    // Point directly to the root 'events' collection and find the specific event doc
+    
     await _db.collection('events').doc(eventId).update({
       'title': title,
       'date': Timestamp.fromDate(date),
@@ -106,9 +106,9 @@ Future<void> updateEvent({
 
   Future<void> deleteEvent({
     required String eventId,
-    required String houseId, // Kept so your UI parameters don't break
+    required String houseId, 
   }) async {
-    // Point directly to the root 'events' collection and delete the specific event doc
+    
     await _db.collection('events').doc(eventId).delete();
   }
 
@@ -126,7 +126,7 @@ Future<void> updateEvent({
             createdBy: currentUserId,
           ).toMap());
 
-  // ── Bills ────────────────────────────────────────────────────────────────────
+  
 
   Stream<List<BillModel>> billsStream(String houseId) => _db
       .collection('bills')
@@ -156,7 +156,7 @@ Future<void> updateEvent({
   Future<void> deleteBill(String billId) =>
       _db.collection('bills').doc(billId).delete();
 
-  // FIND and REPLACE this entire method:
+  
 Future<void> settleBill({
   required String billId,
   required String userId,
@@ -203,7 +203,7 @@ Future<List<double>> getBalances(String houseId, String currentUserId) async {
 }
 
 
-  // ── House members (legacy — kept for bills/calendar compatibility) ────────────
+  
 
   Future<List<Map<String, String>>> getHouseMembers(String houseId) async {
     final snap = await _db
@@ -220,9 +220,9 @@ Future<List<double>> getBalances(String houseId, String currentUserId) async {
         .toList();
   }
 
-  // ── Chores ───────────────────────────────────────────────────────────────────
+  
 
-  /// Streams all chores for the house in the current week.
+  
   Stream<List<ChoreModel>> choresStream(String houseId) => _db
       .collection('chores')
       .where('houseId', isEqualTo: houseId)
@@ -230,7 +230,7 @@ Future<List<double>> getBalances(String houseId, String currentUserId) async {
       .snapshots()
       .map((s) => s.docs.map(ChoreModel.fromFirestore).toList());
 
-  /// Creates a new chore. If there is only one member, XP is auto-agreed.
+  
   Future<void> addChore({
     required String title,
     required String assignedTo,
@@ -259,25 +259,25 @@ Future<List<double>> getBalances(String houseId, String currentUserId) async {
   Future<void> deleteChore(String choreId) =>
       _db.collection('chores').doc(choreId).delete();
 
-  /// Toggles a chore's completion. Only the assigned user should call this.
+  
   Future<void> toggleChore(String choreId, bool completed) =>
       _db.collection('chores').doc(choreId).update({
         'completed': completed,
         'completedAt': completed ? FieldValue.serverTimestamp() : null,
       });
 
-  /// Records this user's XP vote. Finalises XP once all members have voted.
+  
   Future<void> voteOnChoreXP({
     required String choreId,
     required String userId,
     required int vote,
     required String houseId,
   }) async {
-    // Get current member list
+    
     final houseDoc = await _db.collection('houses').doc(houseId).get();
     final memberIds = List<String>.from(houseDoc.data()?['members'] ?? []);
 
-    // Merge new vote with existing votes
+    
     final choreDoc = await _db.collection('chores').doc(choreId).get();
     final existing = Map<String, int>.from(
       (choreDoc.data()?['xpVotes'] as Map?)
@@ -299,7 +299,7 @@ Future<List<double>> getBalances(String houseId, String currentUserId) async {
     await _db.collection('chores').doc(choreId).update(update);
   }
 
-  /// Returns a map of userId → total XP earned this week.
+  
   Future<Map<String, int>> getWeeklyXP(String houseId) async {
     final snap = await _db
         .collection('chores')
@@ -316,10 +316,10 @@ Future<List<double>> getBalances(String houseId, String currentUserId) async {
     return scores;
   }
 
-  // ── Notes ────────────────────────────────────────────────────────────────────
+  
 
-  /// Streams notes that have not yet expired.
-  /// Filters client-side to avoid needing a composite Firestore index.
+  
+  
   Stream<List<NoteModel>> notesStream(String houseId) {
     return _db
         .collection('notes')

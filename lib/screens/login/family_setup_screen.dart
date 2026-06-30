@@ -22,16 +22,16 @@ class FamilySetupScreen extends StatefulWidget {
 }
 
 class _FamilySetupScreenState extends State<FamilySetupScreen> {
-  // ── State ────────────────────────────────────────────────────────────────────
+  
 
-  bool _isCreating = true; // true = create mode, false = join mode
+  bool _isCreating = true; 
   final _familyNameCtrl = TextEditingController();
   final _inviteCodeCtrl = TextEditingController();
 
   bool _loading = false;
   String? _error;
 
-  // After a family is successfully created, these are populated.
+  
   String? _createdCode;
   String? _createdHouseId;
 
@@ -42,15 +42,15 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     super.dispose();
   }
 
-  // ── Invite code generator ────────────────────────────────────────────────────
+  
 
   String _generateCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no O/0, I/1 to avoid confusion
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; 
     final random = Random.secure();
     return List.generate(6, (_) => chars[random.nextInt(chars.length)]).join();
   }
 
-  // ── Create family ────────────────────────────────────────────────────────────
+  
 
   Future<void> _createFamily() async {
     final name = _familyNameCtrl.text.trim();
@@ -86,8 +86,8 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     }
   }
 
-  // Tap "Let's Go!" — links the user to the house they created, which makes
-  // the AuthGate's Firestore stream detect houseId and route to RootNavigation.
+  
+  
   Future<void> _finalizeCreate() async {
     if (_createdHouseId == null) return;
     setState(() => _loading = true);
@@ -96,14 +96,14 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
           .collection('users')
           .doc(widget.uid)
           .update({'houseId': _createdHouseId});
-      // AuthGate will now route to RootNavigation automatically
+      
     } catch (_) {
       setState(() => _error = 'Something went wrong. Please try again.');
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  // ── Join family ──────────────────────────────────────────────────────────────
+  
 
   Future<void> _joinFamily() async {
     final code = _inviteCodeCtrl.text.trim().toUpperCase();
@@ -131,7 +131,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
 
       final houseDoc = query.docs.first;
 
-      // Add user to the house and set their houseId in one batch
+      
       final batch = FirebaseFirestore.instance.batch();
       batch.update(houseDoc.reference, {
         'members': FieldValue.arrayUnion([widget.uid]),
@@ -141,7 +141,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
         {'houseId': houseDoc.id},
       );
       await batch.commit();
-      // AuthGate will now route to RootNavigation automatically
+      
     } on FirebaseException catch (_) {
       setState(() => _error = 'Could not join family. Please try again.');
     } finally {
@@ -149,7 +149,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     }
   }
 
-  // ── Build ────────────────────────────────────────────────────────────────────
+  
 
   @override
   Widget build(BuildContext context) {
@@ -190,7 +190,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     );
   }
 
-  // ── Header ───────────────────────────────────────────────────────────────────
+  
 
   Widget _buildHeader() {
     return Column(
@@ -230,7 +230,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     );
   }
 
-  // ── Mode toggle (Create / Join) ───────────────────────────────────────────────
+  
 
   Widget _buildModeToggle() {
     return Container(
@@ -265,10 +265,10 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     );
   }
 
-  // ── Create panel ─────────────────────────────────────────────────────────────
+  
 
   Widget _buildCreatePanel() {
-    // If the family was just created, show the invite code + QR instead of the form
+    
     if (_createdCode != null) {
       return _buildCodeReveal();
     }
@@ -303,7 +303,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     );
   }
 
-  // Shows after a family is created — invite code + QR + "Let's Go!" button
+  
   Widget _buildCodeReveal() {
     return Column(
       key: const ValueKey('code'),
@@ -367,7 +367,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              // QR code (white background so it's scannable)
+              
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: QrImageView(
@@ -403,7 +403,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     );
   }
 
-  // ── Join panel ───────────────────────────────────────────────────────────────
+  
 
   Widget _buildJoinPanel() {
     return Column(
@@ -439,7 +439,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
   }
 }
 
-// ── Toggle tab button ─────────────────────────────────────────────────────────
+
 
 class _ToggleTab extends StatelessWidget {
   final String label;

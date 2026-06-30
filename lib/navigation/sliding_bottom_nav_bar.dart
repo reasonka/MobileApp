@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 
 class HomieNavItem {
-  final String imagePath; // Changed: uses image asset instead of IconData
+  final String imagePath; 
   final String label;
 
   const HomieNavItem({required this.imagePath, required this.label});
@@ -66,7 +66,7 @@ class _SlidingBottomNavBarState extends State<SlidingBottomNavBar>
     return Container(
       height: 72,
       decoration: BoxDecoration(
-        // ── Image background ─────────────────────────────────────────────
+        
         image: const DecorationImage(
           image: AssetImage('assets/images/BottomNavBG.png'),
           fit: BoxFit.fill,
@@ -82,7 +82,7 @@ class _SlidingBottomNavBarState extends State<SlidingBottomNavBar>
       ),
       child: Stack(
         children: [
-          // ── Sliding pill indicator ─────────────────────────────────────
+          
           AnimatedBuilder(
             animation: _slideAnim,
             builder: (context, _) {
@@ -100,7 +100,7 @@ class _SlidingBottomNavBarState extends State<SlidingBottomNavBar>
                   width: itemWidth * 0.5,
                   height: 50,
                   decoration: BoxDecoration(
-                    // Semi-transparent highlight so the BG image still shows
+                    
                     color: AppColors.pink.withOpacity(0.35),
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
@@ -116,7 +116,7 @@ class _SlidingBottomNavBarState extends State<SlidingBottomNavBar>
             },
           ),
 
-          // ── Tab buttons ────────────────────────────────────────────────
+          
           Row(
             children: List.generate(itemCount, (i) {
               final active = widget.currentIndex == i;
@@ -134,7 +134,7 @@ class _SlidingBottomNavBarState extends State<SlidingBottomNavBar>
                           duration: const Duration(milliseconds: 250),
                           curve: Curves.easeOutBack,
                           child: ColorFiltered(
-                            // Dim inactive icons; keep active ones full colour
+                            
                             colorFilter: active
                                 ? const ColorFilter.mode(
                                     Colors.transparent,

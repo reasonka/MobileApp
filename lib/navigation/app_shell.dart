@@ -7,7 +7,7 @@ import '../screens/calendar/calendar_screen.dart';
 const Color _darkBg = Color(0xFF0D0D1A);
 const Color _pink   = Color(0xFFE040FB);
 
-// ── Image asset paths ────────────────────────────────────────────────────────
+
 const String _navBgImage = 'assets/images/BottomNavBG.png';
 const List<String> _navIconPaths = [
   'assets/images/coinIcon.png',
@@ -30,7 +30,7 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  int _index = 1; // start on Home (middle tab)
+  int _index = 1; 
 
   String _houseName = '';
   bool _loaded = false;
@@ -79,19 +79,19 @@ class _AppShellState extends State<AppShell> {
       body: IndexedStack(
         index: _index,
         children: [
-          // 0 – Bills
+          
           BillsScreen(
             houseId: widget.houseId,
             currentUserId: widget.currentUserId,
             houseName: _houseName,
             avatarIndex: 0,
           ),
-          // 1 – Home (middle)
+          
           HomeScreen(
             userId: widget.currentUserId,
             houseId: widget.houseId,
           ),
-          // 2 – Calendar
+          
           CalendarScreen(
             houseId: widget.houseId,
             currentUserId: widget.currentUserId,
@@ -108,9 +108,9 @@ class _AppShellState extends State<AppShell> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SLIDING BOTTOM NAV BAR
-// ─────────────────────────────────────────────────────────────────────────────
+
+
+
 
 class _SlidingNavBar extends StatefulWidget {
   final int currentIndex;
@@ -164,7 +164,7 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
     return Container(
       height: 72,
       decoration: BoxDecoration(
-        // ── Image background ───────────────────────────────────────────
+        
         image: const DecorationImage(
           image: AssetImage(_navBgImage),
           fit: BoxFit.fill,
@@ -180,7 +180,7 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
       ),
       child: Stack(
         children: [
-          // ── Sliding pill (semi-transparent so BG image shows through) ──
+          
           AnimatedBuilder(
             animation: _anim,
             builder: (context, _) {
@@ -209,7 +209,7 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
             },
           ),
 
-          // ── Image icon buttons ─────────────────────────────────────────
+          
           Row(
             children: List.generate(itemCount, (i) {
               final active = widget.currentIndex == i;
@@ -224,7 +224,7 @@ class _SlidingNavBarState extends State<_SlidingNavBar>
                         scale: active ? 1.2 : 1.0,
                         duration: const Duration(milliseconds: 250),
                         curve: Curves.easeOutBack,
-                        // Dim inactive icons
+                        
                         child: ColorFiltered(
                           colorFilter: active
                               ? const ColorFilter.mode(

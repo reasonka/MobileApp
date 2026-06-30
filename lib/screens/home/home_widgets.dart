@@ -7,7 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../theme.dart';
 
-/// Design tokens from Figma Home (88:184) and Home scrolled (88:110).
+
 class HomeTokens {
   static const screenBg = Color(0xFF161823);
   static const horizontalPadding = 21.0;
@@ -94,18 +94,18 @@ class HomeTokens {
   static const groupPicPanelAsset = '$_groupPicDir/group_pic_panel.svg';
   static const defaultGroupPic = '$_groupPicDir/cats/purple.png';
 
-  /// Cat art inset inside the 360×200 GroupPic panel (Figma).
+  
   static const groupPicCatsPadding = EdgeInsets.fromLTRB(27, 12, 27, 4);
   static const groupPicAspectRatio = 360 / 200;
 
-  /// Avatar index: 0 = purple, 1 = blue, 2 = blue wink.
+  
   static String _avatarPicName(int index) => switch (index.clamp(0, 2)) {
         1 => 'blue',
         2 => 'blue_wink',
         _ => 'purple',
       };
 
-  /// Transparent cat art for 1–2 household members.
+  
   static String groupPicAsset(Iterable<int> avatarIndices) {
     final sorted = avatarIndices.map((i) => i.clamp(0, 2)).toList()..sort();
 
@@ -134,13 +134,13 @@ class HomeTokens {
     );
   }
 
-  // ── Podium (Figma Leaderboard 209:234) ─────────────────────────────────────
+  
 
   static const _podiumDir = 'assets/images/home/podium';
   static const podiumGlowAsset = '$_podiumDir/glow.png';
   static const podiumPedestalAsset = '$_podiumDir/pedestal.png';
   static const podiumAspectRatio = 273.875 / 168.821;
-  /// Figma Home scrolled — podium inset x=64 on 402pt screen.
+  
   static const podiumWidthFraction = 273.875 / 402;
 
   static String podiumCharacterAsset(int avatarIndex) {
@@ -187,7 +187,7 @@ class HomeCatAvatar extends StatelessWidget {
   }
 }
 
-/// Household group illustration — panel + transparent cat art per avatars.
+
 class HomeGroupPic extends StatelessWidget {
   final List<Map<String, dynamic>> members;
 
@@ -219,7 +219,7 @@ class HomeGroupPic extends StatelessWidget {
   }
 }
 
-/// XP leaderboard podium — 1st center, 2nd left, 3rd right (Figma 209:234).
+
 class HomePodium extends StatelessWidget {
   final List<Map<String, dynamic>> rankedMembers;
 
@@ -313,11 +313,11 @@ class HomePodium extends StatelessWidget {
   }
 }
 
-/// Bottom fade overlay — Figma Scroll Edge Effect Soft (88:296).
+
 class HomeBottomScrollFade extends StatelessWidget {
   const HomeBottomScrollFade({super.key});
 
-  /// Taller than Figma export so the fade is obvious over scroll content.
+  
   static const double _heightFraction = 0.38;
 
   @override
@@ -351,7 +351,7 @@ class HomeBottomScrollFade extends StatelessWidget {
   }
 }
 
-/// Empty housemate slot — matches Figma member panel size (≈159×138).
+
 class HomeHousemateInvitePlaceholder extends StatelessWidget {
   final VoidCallback onTap;
 
@@ -408,7 +408,7 @@ class HomeHousemateInvitePlaceholder extends StatelessWidget {
   }
 }
 
-/// Family invite QR bottom sheet (same flow as Settings → Family Link).
+
 class HomeFamilyInviteSheet {
   HomeFamilyInviteSheet._();
 
@@ -532,7 +532,7 @@ class HomeHouseTitle extends StatelessWidget {
   }
 }
 
-/// Fixed glass FAB — Figma NewChoreButton (y≈693, h=45).
+
 class HomeGlassActionButton extends StatelessWidget {
   final String label;
   final double width;
@@ -587,7 +587,7 @@ class HomeGlassActionButton extends StatelessWidget {
   }
 }
 
-/// Swipe up from the bottom (Instagram vanishing-messages style) to open a note.
+
 class HomeNoteSwipeUpLayer extends StatefulWidget {
   final VoidCallback onTriggered;
   final double navReservedHeight;

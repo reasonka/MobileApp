@@ -7,7 +7,7 @@ class NoteModel {
   final String authorName;
   final String houseId;
   final DateTime createdAt;
-  final DateTime expiresAt; // end of the day it was created
+  final DateTime expiresAt; 
 
   const NoteModel({
     required this.noteId,

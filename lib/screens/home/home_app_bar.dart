@@ -1,4 +1,4 @@
-//home_app_bar.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,7 +7,7 @@ import '../settings/settings_screen.dart';
 import 'home_widgets.dart';
 
 
-/// Collapsing header matching Figma Home top (88:314) vs scrolled (88:172).
+
 class HomeSliverAppBar extends StatelessWidget {
   final String houseId;
   final String currentUserId;
@@ -27,7 +27,7 @@ class HomeSliverAppBar extends StatelessWidget {
   static const double _expandedBody = 248;
   static const double _collapsedBody = 132;
 
-  // Figma Screen (402×874) — absolute y from top of frame.
+  
   static const double _titleTopExpanded = 135;
   static const double _titleTopCollapsed = 61;
   static const double _avatarTopExpanded = 68;

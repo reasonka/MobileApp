@@ -43,7 +43,7 @@ class _NewNoteSheetState extends State<NewNoteSheet> {
       );
       if (mounted) Navigator.pop(context);
     } catch (_) {
-      // Silently ignore; note just doesn't save
+      
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -62,7 +62,7 @@ class _NewNoteSheetState extends State<NewNoteSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Handle
+          
           Center(
             child: Container(
               width: 40,
