@@ -17,16 +17,26 @@ import 'screens/login/family_setup_screen.dart';
 import 'firebase_options.dart';
 import 'services/sound_service.dart';
 import 'services/notification_service.dart'; 
-import 'services/location_service.dart';
+import 'services/location_service.dart'; 
+import 'services/inbox_listener.dart';
+
+
+
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     // options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+
   await SoundService.instance.preload();
   await NotificationService.instance.init();
   await NotificationService.instance.requestPermissions();
+
+  InboxListener.instance.start(FirebaseAuth.instance.currentUser?.uid ?? '');
+
   runApp(const HomieApp());
 }
 
@@ -191,26 +201,28 @@ class _RootNavigationState extends State<RootNavigation>
   late final List<AnimationController> _controllers;
 
   @override
-  void initState() {
-    super.initState();
-    _controllers = List.generate(
-      _navItems.length,
-      (_) => AnimationController(
-        vsync: this,
-        duration: const Duration(milliseconds: 300),
-        lowerBound: 0.0,
-        upperBound: 2.0,
-      ),
-    );
-    for (int i = 0; i < _controllers.length; i++) {
-      _controllers[i].value = (i == 0) ? 1.0 : 2.0;
-    }
-
-    LocationService.instance.start(
-      userId: widget.userId,
-      houseId: widget.houseId,
-    );
+void initState() {
+  super.initState();
+  _controllers = List.generate(
+    _navItems.length,
+    (_) => AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+      lowerBound: 0.0,
+      upperBound: 2.0,
+    ),
+  );
+  for (int i = 0; i < _controllers.length; i++) {
+    _controllers[i].value = (i == 0) ? 1.0 : 2.0;
   }
+
+ LocationService.instance.start(
+    userId: widget.userId,
+    houseId: widget.houseId,
+  );
+
+  InboxListener.instance.start(widget.userId);
+}
 
   @override
   void dispose() {
@@ -218,6 +230,7 @@ class _RootNavigationState extends State<RootNavigation>
       c.dispose();
     }
     LocationService.instance.stop();
+    InboxListener.instance.stop(); 
     super.dispose();
   }
 

@@ -3,6 +3,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 /// Singleton wrapper around flutter_local_notifications.
 /// Mirrors the style of SoundService — one shared instance, init once in main().
@@ -115,6 +116,50 @@ class NotificationService {
     if (!_initialized) await init();
     await _plugin.cancel(idFromEventId(eventId));
   }
+Future<void> showInstantNotification({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    if (!_initialized) await init();
+    await _plugin.show(
+      id,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _eventChannelId,
+          _eventChannelName,
+          channelDescription: _eventChannelDesc,
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+    );
+  }
+  Future<void> showFromRemoteMessage(RemoteMessage message) async {
+  if (!_initialized) await init();
+  final notification = message.notification;
+  if (notification == null) return;
+  await _plugin.show(
+    message.hashCode & 0x7FFFFFFF,
+    notification.title,
+    notification.body,
+    const NotificationDetails(
+      android: AndroidNotificationDetails(
+        _eventChannelId,
+        _eventChannelName,
+        channelDescription: _eventChannelDesc,
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+    ),
+  );
+}
+
+
 
   /// DEV-ONLY: fires a notification immediately, bypassing scheduling,
   /// so you can verify permissions/wiring work on a real device.
