@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -15,10 +16,15 @@ import 'screens/login/profile_setup_screen.dart';
 import 'screens/login/family_setup_screen.dart';
 // ignore: unused_import
 import 'firebase_options.dart';
+import 'services/firestore_service.dart';
 import 'services/sound_service.dart';
 import 'services/notification_service.dart'; 
 import 'services/location_service.dart'; 
 import 'services/inbox_listener.dart';
+import 'screens/home/home_widgets.dart';
+import 'screens/settings/settings_screen.dart';
+import 'screens/profile_screen.dart';
+import 'theme.dart';
 
 
 
@@ -201,28 +207,27 @@ class _RootNavigationState extends State<RootNavigation>
   late final List<AnimationController> _controllers;
 
   @override
-void initState() {
-  super.initState();
-  _controllers = List.generate(
-    _navItems.length,
-    (_) => AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-      lowerBound: 0.0,
-      upperBound: 2.0,
-    ),
-  );
-  for (int i = 0; i < _controllers.length; i++) {
-    _controllers[i].value = (i == 0) ? 1.0 : 2.0;
+  void initState() {
+    super.initState();
+    _controllers = List.generate(
+      _navItems.length,
+      (_) => AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 300),
+        lowerBound: 0.0,
+        upperBound: 2.0,
+      ),
+    );
+    for (int i = 0; i < _controllers.length; i++) {
+      _controllers[i].value = (i == 0) ? 1.0 : 2.0;
+    }
+
+    LocationService.instance.start(
+      userId: widget.userId,
+      houseId: widget.houseId,
+    );
+    InboxListener.instance.start(widget.userId);
   }
-
- LocationService.instance.start(
-    userId: widget.userId,
-    houseId: widget.houseId,
-  );
-
-  InboxListener.instance.start(widget.userId);
-}
 
   @override
   void dispose() {
@@ -264,18 +269,49 @@ void initState() {
     );
   }
 
-  Widget _buildScreen(int index) {
-  switch (index) {
-    case 0: return HomeScreen(userId: widget.userId, houseId: widget.houseId);
-    case 1: return BillsScreen(houseId: widget.houseId, currentUserId: widget.userId, houseName: '', avatarIndex: 0);
-    case 2: return CalendarScreen(houseId: widget.houseId, currentUserId: widget.userId, houseName: '', avatarIndex: 0);
-    case 3: return MapScreen(houseId: widget.houseId, currentUserId: widget.userId);
-    default: return const _PlaceholderScreen(label: '?');
-  }
-}
-
   @override
   Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top + kGlobalTopBarHeight;
+
+    // Local helper so it has access to context (for MediaQuery top padding).
+    Widget buildScreen(int index) {
+      switch (index) {
+        case 0:
+          // HomeScreen manages its own top spacer internally.
+          return HomeScreen(userId: widget.userId, houseId: widget.houseId);
+        case 1:
+          return Padding(
+            padding: EdgeInsets.only(top: topPad),
+            child: BillsScreen(
+              houseId: widget.houseId,
+              currentUserId: widget.userId,
+              houseName: '',
+              avatarIndex: 0,
+            ),
+          );
+        case 2:
+          return Padding(
+            padding: EdgeInsets.only(top: topPad),
+            child: CalendarScreen(
+              houseId: widget.houseId,
+              currentUserId: widget.userId,
+              houseName: '',
+              avatarIndex: 0,
+            ),
+          );
+        case 3:
+          return Padding(
+            padding: EdgeInsets.only(top: topPad),
+            child: MapScreen(
+              houseId: widget.houseId,
+              currentUserId: widget.userId,
+            ),
+          );
+        default:
+          return const _PlaceholderScreen(label: '?');
+      }
+    }
+
     return Scaffold(
       backgroundColor: _bg,
       body: Stack(
@@ -293,8 +329,17 @@ void initState() {
                   ),
                 );
               },
-              child: _buildScreen(i),
+              child: buildScreen(i),
             ),
+
+          // ── Static global top bar — never moves ───────────────────────────
+          Positioned(
+            top: 0, left: 0, right: 0,
+            child: _GlobalTopBar(
+              userId:  widget.userId,
+              houseId: widget.houseId,
+            ),
+          ),
 
           Positioned(
             left: 0, right: 0, bottom: 0,
@@ -448,6 +493,170 @@ class _Slot extends StatelessWidget {
         width: w,
         height: h,
         fit: BoxFit.contain,
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// GLOBAL STATIC TOP BAR
+// ─────────────────────────────────────────────
+
+class _GlobalTopBar extends StatefulWidget {
+  final String userId;
+  final String houseId;
+
+  const _GlobalTopBar({required this.userId, required this.houseId});
+
+  @override
+  State<_GlobalTopBar> createState() => _GlobalTopBarState();
+}
+
+class _GlobalTopBarState extends State<_GlobalTopBar> {
+  final FirestoreService _fs = FirestoreService();
+
+  String _houseName   = '';
+  int    _avatarIndex = 0;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _avatarSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+    _listenAvatar();
+  }
+
+  Future<void> _loadData() async {
+    final house   = await _fs.getHouseData(widget.houseId);
+    final members = await _fs.getHouseMemberDetails(widget.houseId);
+    final me = members.firstWhere(
+      (m) => m['userId'] == widget.userId,
+      orElse: () => <String, dynamic>{'avatarIndex': 0},
+    );
+    if (mounted) {
+      setState(() {
+        _houseName   = (house?['name'] as String?) ?? 'Our House';
+        _avatarIndex = me['avatarIndex'] as int? ?? 0;
+      });
+    }
+  }
+
+  void _listenAvatar() {
+    _avatarSub = FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.userId)
+        .snapshots()
+        .listen((doc) {
+      if (!mounted) return;
+      final data = doc.data() ?? {};
+      setState(() {
+        _avatarIndex = data['avatarIndex'] as int? ?? _avatarIndex;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _avatarSub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final double statusH = MediaQuery.of(context).padding.top;
+
+    return Container(
+      height: statusH + kGlobalTopBarHeight,
+      // Solid background so scrolling content from screens never shows through.
+      color: HomeTokens.screenBg,
+      child: Stack(
+        children: [
+          // Background panel image (same as HouseAppBar)
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/TopPanel.png',
+              fit: BoxFit.fill,
+            ),
+          ),
+          // Content row, placed below the status bar
+          Positioned(
+            left: 0, right: 0,
+            top: statusH,
+            bottom: 0,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Tappable avatar → profile screen
+                  GestureDetector(
+                    onTap: () {
+                      SoundService.instance.playPop();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ProfileScreen(
+                            userId: widget.userId,
+                            houseId: widget.houseId,
+                          ),
+                        ),
+                      );
+                    },
+                    child: HomeCatAvatar(avatarIndex: _avatarIndex, size: 42),
+                  ),
+                  const SizedBox(width: 8),
+                  // House name with gradient shader
+                  Expanded(
+                    child: _houseName.isEmpty
+                        ? const SizedBox.shrink()
+                        : ShaderMask(
+                            shaderCallback: (bounds) =>
+                                HomeTokens.houseTitleGradient.createShader(bounds),
+                            child: Text(
+                              _houseName.toUpperCase(),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              softWrap: true,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                fontSize: _houseName.length > 14
+                                    ? _houseName.length > 20 ? 13.0 : 22.0
+                                    : 32.0,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: _houseName.length > 14 ? -0.5 : -1.5,
+                                height: 1.1,
+                              ),
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Tappable settings icon → settings screen
+                  GestureDetector(
+                    onTap: () {
+                      SoundService.instance.playPop();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SettingsScreen(
+                            userId: widget.userId,
+                            houseId: widget.houseId,
+                          ),
+                        ),
+                      );
+                    },
+                    child: SvgPicture.asset(
+                      'assets/images/home/settings.svg',
+                      width: 40,
+                      height: 40,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

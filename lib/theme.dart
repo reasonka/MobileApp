@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Height of the persistent global top bar (does not include the system status bar).
+const double kGlobalTopBarHeight = 64.0;
+
 class AppColors {
   // Background
   static const Color darkBg = Color(0xFF0D0D1A);

@@ -5,7 +5,6 @@ import '../../models/chore_model.dart';
 import '../../models/note_model.dart';
 import '../../services/firestore_service.dart';
 import '../../theme.dart';
-import '../../widgets/shared_app_bar.dart';
 import 'home_widgets.dart';
 import 'new_chore_sheet.dart';
 import 'new_note_sheet.dart';
@@ -157,12 +156,13 @@ void _listenToMembers() async {
                   CustomScrollView(
                       controller: _scrollCtrl,
                       slivers: [
-                        HouseAppBar(
-                          houseId: widget.houseId,
-                          currentUserId: widget.userId,
-                          weekRangeLabel: _weekRangeLabel,
-                          houseName: _houseName,
-                          
+                        // Spacer that sits behind the global static top bar
+                        // (status bar + kGlobalTopBarHeight).
+                        SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: MediaQuery.of(context).padding.top +
+                                kGlobalTopBarHeight,
+                          ),
                         ),
                         if (pendingVotes.isNotEmpty)
                           SliverToBoxAdapter(
