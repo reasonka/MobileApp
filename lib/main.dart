@@ -14,6 +14,7 @@ import 'screens/map/map_screen.dart';
 import 'screens/login/login_screen.dart';
 import 'screens/login/profile_setup_screen.dart';
 import 'screens/login/family_setup_screen.dart';
+import 'screens/login/pending_approval_screen.dart';
 // ignore: unused_import
 import 'firebase_options.dart';
 import 'services/firestore_service.dart';
@@ -94,11 +95,19 @@ class HomieApp extends StatelessWidget {
               }
 
               if (data['houseId'] == null) {
-                    return FamilySetupScreen(
-                      uid: user.uid,
-                      userName: data['name'] as String? ?? '',
-                    );
-                  }
+                // Awaiting owner approval for a specific house.
+                final pendingId = data['pendingHouseId'] as String?;
+                if (pendingId != null && pendingId.isNotEmpty) {
+                  return PendingApprovalScreen(
+                    userId: user.uid,
+                    pendingHouseId: pendingId,
+                  );
+                }
+                return FamilySetupScreen(
+                  uid: user.uid,
+                  userName: data['name'] as String? ?? '',
+                );
+              }
 
               return RootNavigation(
                 userId: user.uid,

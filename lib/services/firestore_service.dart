@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/bill_model.dart';
 import '../models/chore_model.dart';
@@ -69,20 +71,104 @@ class FirestoreService {
 
   Future<void> leaveHouse(String userId, String houseId) async {
     final batch = _db.batch();
-
-    
     batch.update(_db.collection('users').doc(userId), {
       'houseId': FieldValue.delete(),
     });
-
-    
     batch.update(_db.collection('houses').doc(houseId), {
       'members': FieldValue.arrayRemove([userId]),
     });
-
     await batch.commit();
   }
-  
+
+  // ── House management (owner) ────────────────────────────────────────────
+
+  /// Real-time stream of the house document.
+  Stream<Map<String, dynamic>> houseStream(String houseId) => _db
+      .collection('houses')
+      .doc(houseId)
+      .snapshots()
+      .map((doc) => doc.data() ?? {});
+
+  /// Rename the house.
+  Future<void> updateHouseName(String houseId, String name) =>
+      _db.collection('houses').doc(houseId).update({'name': name});
+
+  /// Toggle whether new joiners need owner approval.
+  Future<void> setRequireApproval(String houseId, bool value) =>
+      _db.collection('houses').doc(houseId).update({'requireApproval': value});
+
+  /// Generate a fresh invite code and store it.
+  Future<String> regenerateInviteCode(String houseId) async {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    final rng = Random.secure();
+    final code =
+        List.generate(6, (_) => chars[rng.nextInt(chars.length)]).join();
+    await _db.collection('houses').doc(houseId).update({'inviteCode': code});
+    return code;
+  }
+
+  /// Owner removes an existing member from the house.
+  Future<void> removeMember(String houseId, String memberId) async {
+    final batch = _db.batch();
+    batch.update(_db.collection('houses').doc(houseId), {
+      'members': FieldValue.arrayRemove([memberId]),
+    });
+    batch.update(_db.collection('users').doc(memberId), {
+      'houseId': FieldValue.delete(),
+    });
+    await batch.commit();
+  }
+
+  // ── Pending-approval flow ───────────────────────────────────────────────
+
+  /// Real-time stream of pending-member profiles for [houseId].
+  Stream<List<Map<String, dynamic>>> pendingMembersStream(String houseId) =>
+      _db.collection('houses').doc(houseId).snapshots().asyncMap((snap) async {
+        final ids =
+            List<String>.from(snap.data()?['pendingMembers'] ?? []);
+        if (ids.isEmpty) return [];
+        final profiles = await Future.wait(ids.map((uid) async {
+          final doc = await _db.collection('users').doc(uid).get();
+          final d = doc.data() ?? {};
+          return <String, dynamic>{
+            'userId': uid,
+            'name':
+                (d['name'] as String?) ?? (d['userName'] as String?) ?? 'Unknown',
+            'avatarIndex': d['avatarIndex'] as int? ?? 0,
+          };
+        }));
+        return profiles;
+      });
+
+  /// Owner accepts a pending member → moves to [members], sets their [houseId].
+  Future<void> acceptMember(String houseId, String userId) async {
+    final batch = _db.batch();
+    batch.update(_db.collection('houses').doc(houseId), {
+      'pendingMembers': FieldValue.arrayRemove([userId]),
+      'members': FieldValue.arrayUnion([userId]),
+    });
+    batch.update(_db.collection('users').doc(userId), {
+      'houseId': houseId,
+      'pendingHouseId': FieldValue.delete(),
+    });
+    await batch.commit();
+  }
+
+  /// Owner rejects a pending member → removes from queue, clears their pending field.
+  Future<void> rejectMember(String houseId, String userId) async {
+    final batch = _db.batch();
+    batch.update(_db.collection('houses').doc(houseId), {
+      'pendingMembers': FieldValue.arrayRemove([userId]),
+    });
+    batch.update(_db.collection('users').doc(userId), {
+      'pendingHouseId': FieldValue.delete(),
+    });
+    await batch.commit();
+  }
+
+  /// User cancels their own pending request.
+  Future<void> cancelPendingRequest(String houseId, String userId) =>
+      rejectMember(houseId, userId);
 
   Stream<List<EventModel>> eventsStream(String houseId) => _db
       .collection('events')

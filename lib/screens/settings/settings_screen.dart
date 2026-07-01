@@ -5,7 +5,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../profile_screen.dart';
+import '../../services/firestore_service.dart';
 import '../../services/sound_service.dart';
+import 'settings_detail_screens.dart';
 import 'settings_widgets.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -32,6 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _inviteCode = '';
   int _avatarIndex = 0;
   String _searchQuery = '';
+  bool _isOwner = false;
 
   static const _card = Color(0xFF1A1A2E);
   static const _pink = Color(0xFFE040FB);
@@ -63,30 +66,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _houseName = (houseDoc.data()?['name'] as String?) ?? 'Mad House';
         _inviteCode = (houseDoc.data()?['inviteCode'] as String?) ?? '';
         _avatarIndex = userDoc.data()?['avatarIndex'] as int? ?? 0;
+        _isOwner =
+            (houseDoc.data()?['createdBy'] as String?) == widget.userId;
       });
     }
   }
 
-  List<_MenuItem> get _menuItems => [
-        _MenuItem(label: 'Account', icon: 'account', onTap: () => _toast('Account')),
+  List<_MenuItem> get _menuItems {
+    final items = [
+      _MenuItem(label: 'Account', icon: 'account', onTap: () => _toast('Account')),
+      _MenuItem(
+        label: 'Notifications',
+        icon: 'notifications',
+        onTap: () => _toast('Notifications'),
+      ),
+      _MenuItem(
+        label: 'Security',
+        icon: 'security',
+        onTap: () => _toast('Security'),
+      ),
+      _MenuItem(
+        label: 'Privacy',
+        icon: 'privacy',
+        onTap: () => _toast('Privacy'),
+      ),
+      _MenuItem(label: 'Theme', icon: 'theme', onTap: () => _toast('Theme')),
+      _MenuItem(label: 'Help', icon: 'help', onTap: () => _toast('Help')),
+    ];
+    if (_isOwner) {
+      items.insert(
+        0,
         _MenuItem(
-          label: 'Notifications',
-          icon: 'notifications',
-          onTap: () => _toast('Notifications'),
+          label: 'House Settings',
+          icon: 'house',
+          onTap: () {
+            SoundService.instance.playPop();
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => HouseSettingsScreen(
+                  houseId: widget.houseId,
+                  ownerId: widget.userId,
+                ),
+              ),
+            );
+          },
         ),
-        _MenuItem(
-          label: 'Security',
-          icon: 'security',
-          onTap: () => _toast('Security'),
-        ),
-        _MenuItem(
-          label: 'Privacy',
-          icon: 'privacy',
-          onTap: () => _toast('Privacy'),
-        ),
-        _MenuItem(label: 'Theme', icon: 'theme', onTap: () => _toast('Theme')), 
-        _MenuItem(label: 'Help', icon: 'help', onTap: () => _toast('Help')),
-      ];
+      );
+    }
+    return items;
+  }
 
   List<_MenuItem> get _filtered => _searchQuery.isEmpty
       ? _menuItems
@@ -228,6 +257,109 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   letterSpacing: 8,
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmLeaveHouse() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: _card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.orangeAccent.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.exit_to_app_rounded,
+                  color: Colors.orangeAccent, size: 26),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Leave "$_houseName"?',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _isOwner
+                  ? "You're the owner. The house will remain with its other members. "
+                      "Use the invite code to rejoin."
+                  : "You'll need the invite code to rejoin.",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: _textSec,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.white.withOpacity(0.12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () {
+                      SoundService.instance.playPop();
+                      Navigator.pop(context);
+                    },
+                    child: Text(
+                      'Cancel',
+                      style: GoogleFonts.poppins(
+                        color: _textSec,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orangeAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                    ),
+                    onPressed: () async {
+                      SoundService.instance.playPop();
+                      Navigator.pop(context);
+                      await FirestoreService()
+                          .leaveHouse(widget.userId, widget.houseId);
+                      // AuthGate reacts automatically once houseId is cleared.
+                    },
+                    child: Text(
+                      'Leave',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -511,6 +643,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 iconAssetName: 'add_account',
                 label: 'Add account',
                 onTap: () => _toast('Add account'),
+              ),
+              SettingsMenuRow(
+                iconAssetName: 'logout',
+                label: 'Leave House',
+                onTap: () {
+                  SoundService.instance.playDelete();
+                  _confirmLeaveHouse();
+                },
               ),
               SettingsMenuRow(
                 iconAssetName: 'logout',

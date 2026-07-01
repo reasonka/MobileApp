@@ -1,7 +1,12 @@
+import 'dart:math';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../services/firestore_service.dart';
 import '../../services/sound_service.dart';
 import 'settings_widgets.dart';
 
@@ -28,17 +33,20 @@ class SettingsSubpageScaffold extends StatelessWidget {
           ),
           children: [
             const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () {
-                SoundService.instance.playPop();
-                Navigator.pop(context);
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: SvgPicture.asset(
-                  SettingsTokens.iconAsset('back'),
-                  width: 13,
-                  height: 25,
+            Align(
+              alignment: Alignment.centerLeft,
+              child: GestureDetector(
+                onTap: () {
+                  SoundService.instance.playPop();
+                  Navigator.pop(context);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: SvgPicture.asset(
+                    SettingsTokens.iconAsset('back'),
+                    width: 13,
+                    height: 25,
+                  ),
                 ),
               ),
             ),
@@ -757,6 +765,607 @@ class AddAccountSettingsScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HOUSE SETTINGS SCREEN  (owner only)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class HouseSettingsScreen extends StatefulWidget {
+  final String houseId;
+  final String ownerId;
+
+  const HouseSettingsScreen({
+    super.key,
+    required this.houseId,
+    required this.ownerId,
+  });
+
+  @override
+  State<HouseSettingsScreen> createState() => _HouseSettingsScreenState();
+}
+
+class _HouseSettingsScreenState extends State<HouseSettingsScreen> {
+  final FirestoreService _fs = FirestoreService();
+
+  static const _bg    = Color(0xFF0D0D1A);
+  static const _card  = Color(0xFF1A1A2E);
+  static const _pink  = Color(0xFFE040FB);
+  static const _sec   = Color(0xFFB0ADCC);
+
+  bool _requireApproval = false;
+  String _houseName  = '';
+  String _inviteCode = '';
+  bool _editingName  = false;
+  late final TextEditingController _nameCtrl;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameCtrl = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    super.dispose();
+  }
+
+  // ── helpers ──────────────────────────────────────────────────────────────
+
+  void _snack(String msg, {bool error = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.poppins(color: Colors.white)),
+      backgroundColor: error ? Colors.redAccent : _card,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    ));
+  }
+
+  Future<void> _saveName() async {
+    final name = _nameCtrl.text.trim();
+    if (name.isEmpty) return;
+    setState(() => _saving = true);
+    try {
+      await _fs.updateHouseName(widget.houseId, name);
+      _snack('House name updated');
+      setState(() => _editingName = false);
+    } catch (_) {
+      _snack('Could not update name', error: true);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _regen() async {
+    setState(() => _saving = true);
+    try {
+      final code = await _fs.regenerateInviteCode(widget.houseId);
+      _snack('New code: $code');
+    } catch (_) {
+      _snack('Could not regenerate code', error: true);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  void _confirmRemove(Map<String, dynamic> member) {
+    final name = member['name'] as String;
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: _card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('👋', style: TextStyle(fontSize: 36)),
+            const SizedBox(height: 12),
+            Text(
+              'Remove $name?',
+              style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'They will need the invite code to rejoin.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                  fontSize: 13, color: _sec, height: 1.5),
+            ),
+            const SizedBox(height: 24),
+            Row(children: [
+              Expanded(
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Cancel',
+                      style: GoogleFonts.poppins(
+                          color: _sec, fontWeight: FontWeight.w600)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 0,
+                  ),
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    await _fs.removeMember(
+                        widget.houseId, member['userId'] as String);
+                    _snack('$name removed');
+                  },
+                  child: Text('Remove',
+                      style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── build ─────────────────────────────────────────────────────────────────
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bg,
+      body: SafeArea(
+        child: StreamBuilder<Map<String, dynamic>>(
+          stream: _fs.houseStream(widget.houseId),
+          builder: (context, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return const Center(
+                  child: CircularProgressIndicator(color: _pink));
+            }
+            final house = snap.data ?? {};
+            _houseName      = (house['name'] as String?) ?? '';
+            _inviteCode     = (house['inviteCode'] as String?) ?? '';
+            _requireApproval =
+                (house['requireApproval'] as bool?) ?? false;
+
+            final memberIds =
+                List<String>.from(house['members'] ?? []);
+            final pendingIds =
+                List<String>.from(house['pendingMembers'] ?? []);
+
+            if (!_editingName) {
+              _nameCtrl.text = _houseName;
+            }
+
+            return ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              children: [
+                // ── back button ──────────────────────────────────────
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: GestureDetector(
+                    onTap: () {
+                      SoundService.instance.playPop();
+                      Navigator.pop(context);
+                    },
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.symmetric(vertical: 8),
+                      child: SvgPicture.asset(
+                        SettingsTokens.iconAsset('back'),
+                        width: 13,
+                        height: 25,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'House Settings',
+                  style: GoogleFonts.poppins(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  'Only visible to you as the owner.',
+                  style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.white.withValues(alpha: 0.45)),
+                ),
+                const SizedBox(height: 28),
+
+                // ── house name ───────────────────────────────────────
+                _sectionLabel('House Name'),
+                SettingsGradientPanel(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _nameCtrl,
+                          onTap: () =>
+                              setState(() => _editingName = true),
+                          style: GoogleFonts.poppins(
+                              color: Colors.white, fontSize: 16),
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            hintText: 'House name…',
+                            hintStyle: GoogleFonts.poppins(
+                                color: Colors.white38, fontSize: 16),
+                            isDense: true,
+                            contentPadding:
+                                const EdgeInsets.symmetric(
+                                    vertical: 16),
+                          ),
+                        ),
+                      ),
+                      if (_editingName)
+                        TextButton(
+                          onPressed: _saving ? null : _saveName,
+                          child: Text('Save',
+                              style: GoogleFonts.poppins(
+                                  color: _pink,
+                                  fontWeight: FontWeight.w700)),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // ── invite code ──────────────────────────────────────
+                _sectionLabel('Invite Code'),
+                SettingsGradientPanel(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 14),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _inviteCode.isEmpty ? '—' : _inviteCode,
+                          style: GoogleFonts.poppins(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: 6,
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Clipboard.setData(
+                              ClipboardData(text: _inviteCode));
+                          _snack('Code copied!');
+                        },
+                        child: const Icon(Icons.copy_rounded,
+                            color: _pink, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: _saving ? null : _regen,
+                        child: const Icon(Icons.refresh_rounded,
+                            color: _pink, size: 22),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.only(left: 4, top: 6, bottom: 20),
+                  child: Text(
+                    'Regenerating the code invalidates the old one.',
+                    style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.4)),
+                  ),
+                ),
+
+                // ── require approval toggle ──────────────────────────
+                _sectionLabel('Join Requests'),
+                SettingsToggleRow(
+                  title: 'Require my approval',
+                  subtitle:
+                      'New housemates wait for you to accept them before joining.',
+                  value: _requireApproval,
+                  onChanged: (v) async {
+                    await _fs.setRequireApproval(widget.houseId, v);
+                  },
+                ),
+                const SizedBox(height: 20),
+
+                // ── pending requests ─────────────────────────────────
+                if (pendingIds.isNotEmpty) ...[
+                  _sectionLabel('Pending Requests (${pendingIds.length})'),
+                  StreamBuilder<List<Map<String, dynamic>>>(
+                    stream: _fs.pendingMembersStream(widget.houseId),
+                    builder: (context, pendSnap) {
+                      final pending = pendSnap.data ?? [];
+                      return Column(
+                        children: pending
+                            .map((m) => _PendingRow(
+                                  member: m,
+                                  onAccept: () async {
+                                    await _fs.acceptMember(
+                                        widget.houseId,
+                                        m['userId'] as String);
+                                    _snack('${m['name']} accepted!');
+                                  },
+                                  onReject: () async {
+                                    await _fs.rejectMember(
+                                        widget.houseId,
+                                        m['userId'] as String);
+                                    _snack('${m['name']} rejected.');
+                                  },
+                                ))
+                            .toList(),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                ],
+
+                // ── current members ──────────────────────────────────
+                _sectionLabel('Members (${memberIds.length})'),
+                FutureBuilder<List<Map<String, dynamic>>>(
+                  future: _fs.getHouseMemberDetails(widget.houseId),
+                  builder: (context, membSnap) {
+                    final members = membSnap.data ?? [];
+                    if (members.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+                    return Column(
+                      children: members.map((m) {
+                        final isOwner =
+                            m['userId'] == widget.ownerId;
+                        return _MemberRow(
+                          member: m,
+                          isOwner: isOwner,
+                          onRemove: isOwner
+                              ? null
+                              : () => _confirmRemove(m),
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 40),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionLabel(String text) => Padding(
+        padding: const EdgeInsets.only(left: 4, bottom: 10, top: 4),
+        child: Text(
+          text.toUpperCase(),
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF555577),
+            letterSpacing: 1.2,
+          ),
+        ),
+      );
+}
+
+// ── Pending request row ────────────────────────────────────────────────────
+
+class _PendingRow extends StatelessWidget {
+  final Map<String, dynamic> member;
+  final VoidCallback onAccept;
+  final VoidCallback onReject;
+
+  const _PendingRow({
+    required this.member,
+    required this.onAccept,
+    required this.onReject,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final name        = member['name'] as String;
+    final avatarIndex = member['avatarIndex'] as int? ?? 0;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: SettingsGradientPanel(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            // Avatar
+            Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(shape: BoxShape.circle),
+              child: ClipOval(
+                child: Image.asset(
+                  SettingsTokens.avatarAsset(avatarIndex),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Name
+            Expanded(
+              child: Text(
+                name,
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            // Reject
+            GestureDetector(
+              onTap: () {
+                SoundService.instance.playPop();
+                onReject();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                      color: Colors.redAccent.withValues(alpha: 0.3)),
+                ),
+                child: Text('Reject',
+                    style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: Colors.redAccent,
+                        fontWeight: FontWeight.w600)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Accept
+            GestureDetector(
+              onTap: () {
+                SoundService.instance.playPop();
+                onAccept();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE040FB).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                      color: const Color(0xFFE040FB)
+                          .withValues(alpha: 0.3)),
+                ),
+                child: Text('Accept',
+                    style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: const Color(0xFFE040FB),
+                        fontWeight: FontWeight.w600)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Current member row ─────────────────────────────────────────────────────
+
+class _MemberRow extends StatelessWidget {
+  final Map<String, dynamic> member;
+  final bool isOwner;
+  final VoidCallback? onRemove;
+
+  const _MemberRow({
+    required this.member,
+    required this.isOwner,
+    this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final name        = member['name'] as String;
+    final avatarIndex = member['avatarIndex'] as int? ?? 0;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: SettingsGradientPanel(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(shape: BoxShape.circle),
+              child: ClipOval(
+                child: Image.asset(
+                  SettingsTokens.avatarAsset(avatarIndex),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  if (isOwner)
+                    Text(
+                      'Owner',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: const Color(0xFFE040FB),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (onRemove != null)
+              GestureDetector(
+                onTap: () {
+                  SoundService.instance.playDelete();
+                  onRemove!();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                        color:
+                            Colors.redAccent.withValues(alpha: 0.25)),
+                  ),
+                  child: Text('Remove',
+                      style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: Colors.redAccent,
+                          fontWeight: FontWeight.w600)),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

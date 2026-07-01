@@ -148,18 +148,33 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
       }
 
       final houseDoc = query.docs.first;
+      final requireApproval =
+          houseDoc.data()['requireApproval'] as bool? ?? false;
 
-      
       final batch = FirebaseFirestore.instance.batch();
-      batch.update(houseDoc.reference, {
-        'members': FieldValue.arrayUnion([widget.uid]),
-      });
-      batch.update(
-        FirebaseFirestore.instance.collection('users').doc(widget.uid),
-        {'houseId': houseDoc.id},
-      );
+      if (requireApproval) {
+        // Owner must approve — place in pending queue only.
+        batch.update(houseDoc.reference, {
+          'pendingMembers': FieldValue.arrayUnion([widget.uid]),
+        });
+        batch.update(
+          FirebaseFirestore.instance.collection('users').doc(widget.uid),
+          {'pendingHouseId': houseDoc.id},
+        );
+      } else {
+        // Direct join.
+        batch.update(houseDoc.reference, {
+          'members': FieldValue.arrayUnion([widget.uid]),
+        });
+        batch.update(
+          FirebaseFirestore.instance.collection('users').doc(widget.uid),
+          {'houseId': houseDoc.id},
+        );
+      }
       await batch.commit();
-      await _createBirthdayEventIfNeeded(houseDoc.id);
+      if (!requireApproval) {
+        await _createBirthdayEventIfNeeded(houseDoc.id);
+      }
     } on FirebaseException catch (_) {
       setState(() => _error = 'Could not join family. Please try again.');
     } finally {
