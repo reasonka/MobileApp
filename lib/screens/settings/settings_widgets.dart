@@ -2,33 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/sound_service.dart';
+import '../../services/theme_service.dart';
+import '../../theme.dart';
 
 
 class SettingsTokens {
-  static const screenBg = Color(0xFF161823);
+  static Color get screenBg => HomiePalette.current.screenBg;
   static const horizontalPadding = 20.0;
   static const panelRadius = 20.0;
   static const searchHeight = 61.0;
-  static const cardShadow = BoxShadow(
-    color: Color(0x40000000),
-    offset: Offset(0, 4),
-    blurRadius: 4,
-  );
+  static BoxShadow get cardShadow => HomiePalette.current.cardShadow;
 
-  static const panelGradient = RadialGradient(
-    center: Alignment(0.86, 0.62),
-    radius: 1.8,
-    colors: [
-      Color(0xB3AF69F1),
-      Color(0xB3DA70D7),
-      Color(0xB3AE67BC),
-      Color(0xB3815EA0),
-      Color(0xB3555485),
-      Color(0xB33E5077),
-      Color(0xB3284B69),
-    ],
-    stops: [0.0, 0.47, 0.60, 0.73, 0.87, 0.93, 1.0],
-  );
+  static RadialGradient get panelGradient =>
+      HomiePalette.current.panelGradient;
 
   static String iconAsset(String name) => 'assets/images/settings/$name.svg';
 
@@ -60,6 +46,28 @@ class SettingsIcon extends StatelessWidget {
       SettingsTokens.iconAsset(assetName),
       width: size,
       height: size,
+      colorFilter: ThemeService.instance.isLight
+          ? ColorFilter.mode(AppColors.onPanelSecondary, BlendMode.srcIn)
+          : null,
+    );
+  }
+}
+
+class SettingsBackIcon extends StatelessWidget {
+  final double width;
+  final double height;
+
+  const SettingsBackIcon({super.key, this.width = 13, this.height = 25});
+
+  @override
+  Widget build(BuildContext context) {
+    return SvgPicture.asset(
+      SettingsTokens.iconAsset('back'),
+      width: width,
+      height: height,
+      colorFilter: ThemeService.instance.isLight
+          ? ColorFilter.mode(AppColors.onPanel, BlendMode.srcIn)
+          : null,
     );
   }
 }
@@ -78,14 +86,18 @@ class SettingsGradientPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = ThemeService.instance.isLight;
     return Container(
       height: height,
       padding: padding,
-      decoration: BoxDecoration(
-        gradient: SettingsTokens.panelGradient,
-        borderRadius: BorderRadius.circular(SettingsTokens.panelRadius),
-        boxShadow: const [SettingsTokens.cardShadow],
-      ),
+      decoration: isLight
+          ? AppColors.secondaryCard(radius: SettingsTokens.panelRadius)
+          : BoxDecoration(
+              gradient: SettingsTokens.panelGradient,
+              borderRadius:
+                  BorderRadius.circular(SettingsTokens.panelRadius),
+              boxShadow: [SettingsTokens.cardShadow],
+            ),
       child: child,
     );
   }
@@ -126,8 +138,8 @@ class SettingsMenuRow extends StatelessWidget {
               label,
               style: GoogleFonts.poppins(
                 fontSize: 20,
-                fontWeight: FontWeight.w400,
-                color: Colors.white.withOpacity(0.7),
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
               ),
             ),
           ],
@@ -147,10 +159,18 @@ class SettingsFamilyLinkCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = ThemeService.instance.isLight;
     return GestureDetector(
       onTap: onTap,
-      child: SettingsGradientPanel(
+      child: Container(
         padding: const EdgeInsets.fromLTRB(24, 22, 20, 22),
+        decoration: BoxDecoration(
+          gradient: isLight
+              ? HomiePalette.lightHeroGradient
+              : SettingsTokens.panelGradient,
+          borderRadius: BorderRadius.circular(SettingsTokens.panelRadius),
+          boxShadow: AppColors.heroShadow,
+        ),
         child: Row(
           children: [
             Expanded(
@@ -162,7 +182,7 @@ class SettingsFamilyLinkCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 30,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: AppColors.onHero,
                       height: 1.0,
                     ),
                   ),
@@ -172,7 +192,7 @@ class SettingsFamilyLinkCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.w400,
-                      color: Colors.white,
+                      color: AppColors.onHeroSecondary,
                     ),
                   ),
                 ],

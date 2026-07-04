@@ -68,7 +68,7 @@ class _NewNoteSheetState extends State<NewNoteSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: AppColors.onPanelMuted,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -79,15 +79,15 @@ class _NewNoteSheetState extends State<NewNoteSheet> {
             style: GoogleFonts.poppins(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Colors.white),
+                color: AppColors.onPanel),
           ),
           const SizedBox(height: 4),
           Row(
             children: [
-              const Icon(Icons.schedule, color: Colors.white38, size: 14),
+              Icon(Icons.schedule, color: AppColors.onPanelMuted, size: 14),
               const SizedBox(width: 4),
               Text(
-                'This note disappears at midnight tonight',
+                'This note disappears after 24 hours',
                 style: GoogleFonts.poppins(
                     fontSize: 12, color: AppColors.textSecondary),
               ),
@@ -96,20 +96,20 @@ class _NewNoteSheetState extends State<NewNoteSheet> {
           const SizedBox(height: 20),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.06),
+              color: AppColors.onPanelDivider,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withOpacity(0.10)),
+              border: Border.all(color: AppColors.onPanelDivider),
             ),
             child: TextField(
               controller: _ctrl,
               maxLines: 5,
-              style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+              style: GoogleFonts.poppins(color: AppColors.onPanel, fontSize: 14),
               decoration: InputDecoration(
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.all(16),
                 hintText: 'Write something for your housemates…',
                 hintStyle: GoogleFonts.poppins(
-                    color: Colors.white24, fontSize: 14),
+                    color: AppColors.onPanelMuted, fontSize: 14),
               ),
             ),
           ),
@@ -139,13 +139,13 @@ class _NewNoteSheetState extends State<NewNoteSheet> {
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
+                            strokeWidth: 2, color: AppColors.onAccent))
                     : Text(
                         'Post Note',
                         style: GoogleFonts.poppins(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: Colors.white),
+                            color: AppColors.onAccent),
                       ),
               ),
             ),

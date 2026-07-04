@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/saved_accounts_service.dart';
 import 'login_widgets.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -24,6 +25,15 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     _emailCtrl.addListener(_onFieldChanged);
     _passwordCtrl.addListener(_onFieldChanged);
+    _prefillEmailIfSwitching();
+  }
+
+  Future<void> _prefillEmailIfSwitching() async {
+    final email =
+        await SavedAccountsService.instance.consumePendingSwitchEmail();
+    if (!mounted || email == null) return;
+    _emailCtrl.text = email;
+    _onFieldChanged();
   }
 
   void _onFieldChanged() {
@@ -67,6 +77,17 @@ class _LoginScreenState extends State<LoginScreen> {
         await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: email,
           password: password,
+        );
+      }
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null && user.email != null) {
+        await SavedAccountsService.instance.saveAccount(
+          SavedAccount(
+            uid: user.uid,
+            email: user.email!,
+            name: user.displayName ?? '',
+            avatarIndex: 0,
+          ),
         );
       }
     } on FirebaseAuthException catch (e) {
@@ -151,7 +172,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               _obscurePassword
                                   ? Icons.visibility_off_outlined
                                   : Icons.visibility_outlined,
-                              color: Colors.white54,
+                              color: LoginTokens.fieldTextColor,
                               size: 20,
                             ),
                             onPressed: () => setState(

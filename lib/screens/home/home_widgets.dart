@@ -5,11 +5,14 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../models/note_model.dart';
+import '../../services/sound_service.dart';
+import '../../services/theme_service.dart';
 import '../../theme.dart';
 
 
 class HomeTokens {
-  static const screenBg = Color(0xFF161823);
+  static Color get screenBg => HomiePalette.current.screenBg;
   static const horizontalPadding = 21.0;
   static const weekLabelColor = Color(0xFFB5509B);
 
@@ -26,58 +29,16 @@ class HomeTokens {
     stops: [0.0, 0.25, 0.5, 0.75, 1.0],
   );
 
-  static const mainChoreGradient = RadialGradient(
-    center: Alignment(0.86, 0.62),
-    radius: 1.6,
-    colors: [
-      Color(0xB3AF69F1),
-      Color(0xB3DA70D7),
-      Color(0xB3AE67BC),
-      Color(0xB3815EA0),
-      Color(0xB3555485),
-      Color(0xB33E5077),
-      Color(0xB3284B69),
-    ],
-    stops: [0.0, 0.47, 0.60, 0.73, 0.87, 0.93, 1.0],
-  );
+  static RadialGradient get mainChoreGradient =>
+      HomiePalette.current.mainChoreGradient;
 
-  static const memberPanelGradient = RadialGradient(
-    center: Alignment(0.86, 0.62),
-    radius: 1.4,
-    colors: [
-      Color(0x33AF69F1),
-      Color(0x33DA70D7),
-      Color(0x33AE67BC),
-      Color(0x33815EA0),
-      Color(0x33555485),
-      Color(0x333E5077),
-      Color(0x33284B69),
-    ],
-    stops: [0.0, 0.47, 0.60, 0.73, 0.87, 0.93, 1.0],
-  );
+  static RadialGradient get memberPanelGradient =>
+      HomiePalette.current.memberPanelGradient;
 
-  static const leaderboardListGradient = RadialGradient(
-    center: Alignment(0.86, 0.62),
-    radius: 1.6,
-    colors: [
-      Color(0xB3AF69F1),
-      Color(0xB3DA70D7),
-      Color(0xB3A47CD7),
-      Color(0xB36D89D7),
-      Color(0xB3528FD6),
-      Color(0xB33795D6),
-      Color(0xB31B9BD6),
-      Color(0xB30EA1D6),
-      Color(0xB300A1D6),
-    ],
-    stops: [0.0, 0.47, 0.60, 0.73, 0.80, 0.87, 0.93, 0.97, 1.0],
-  );
+  static RadialGradient get leaderboardListGradient =>
+      HomiePalette.current.leaderboardListGradient;
 
-  static const cardShadow = BoxShadow(
-    color: Color(0x40000000),
-    offset: Offset(0, 4),
-    blurRadius: 4,
-  );
+  static BoxShadow get cardShadow => HomiePalette.current.cardShadow;
 
   static String avatarAsset(int index) {
     switch (index.clamp(0, 2)) {
@@ -92,6 +53,7 @@ class HomeTokens {
 
   static const _groupPicDir = 'assets/images/home/group_pics';
   static const groupPicPanelAsset = '$_groupPicDir/group_pic_panel.svg';
+  static const fullGroupPicAsset = '$_groupPicDir/group_pic.png';
   static const defaultGroupPic = '$_groupPicDir/cats/purple.png';
 
   
@@ -107,25 +69,27 @@ class HomeTokens {
 
   
   static String groupPicAsset(Iterable<int> avatarIndices) {
-    final sorted = avatarIndices.map((i) => i.clamp(0, 2)).toList()..sort();
+    final unique = avatarIndices.map((i) => i.clamp(0, 2)).toSet();
 
-    if (sorted.isEmpty) return defaultGroupPic;
+    if (unique.isEmpty) return defaultGroupPic;
 
-    if (sorted.length == 1 || sorted.first == sorted.last) {
-      return '$_groupPicDir/cats/${_avatarPicName(sorted.first)}.png';
+    // Purple + cyan + blue wink all in the house → combined group pic.
+    if (unique.contains(0) && unique.contains(1) && unique.contains(2)) {
+      return fullGroupPicAsset;
     }
 
-    if (sorted.length == 2) {
-      final key = '${_avatarPicName(sorted[0])}_${_avatarPicName(sorted[1])}';
-      return switch (key) {
-        'purple_blue' => '$_groupPicDir/cats/purple_blue.png',
-        'purple_blue_wink' => '$_groupPicDir/cats/purple_blue_wink.png',
-        'blue_blue_wink' => '$_groupPicDir/cats/blue_blue_wink.png',
-        _ => defaultGroupPic,
-      };
+    if (unique.length == 1) {
+      return '$_groupPicDir/cats/${_avatarPicName(unique.first)}.png';
     }
 
-    return defaultGroupPic;
+    final sorted = unique.toList()..sort();
+    final key = '${_avatarPicName(sorted[0])}_${_avatarPicName(sorted[1])}';
+    return switch (key) {
+      'purple_blue' => '$_groupPicDir/cats/purple_blue.png',
+      'purple_blue_wink' => '$_groupPicDir/cats/purple_blue_wink.png',
+      'blue_blue_wink' => '$_groupPicDir/cats/blue_blue_wink.png',
+      _ => defaultGroupPic,
+    };
   }
 
   static String groupPicAssetForMembers(List<Map<String, dynamic>> members) {
@@ -153,6 +117,27 @@ class HomeTokens {
         return '$_podiumDir/characters/purple.png';
     }
   }
+
+  /// Sticky-note paper tint matching each cat avatar (0 purple, 1 cyan, 2 blue wink).
+  static Color stickyNoteColor(int avatarIndex) {
+    switch (avatarIndex.clamp(0, 2)) {
+      case 1:
+        return const Color(0xFF5FE8DC); // cyan cat
+      case 2:
+        return const Color(0xFF85B8FF); // blue wink cat
+      default:
+        return const Color(0xFFF5A8E8); // purple cat
+    }
+  }
+
+  static const stickyNoteSlots = <Alignment>[
+    Alignment(-0.82, -0.62),
+    Alignment(0.78, -0.55),
+    Alignment(-0.72, 0.42),
+    Alignment(0.62, 0.28),
+    Alignment(-0.05, -0.15),
+    Alignment(0.35, 0.55),
+  ];
 }
 
 class HomeCatAvatar extends StatelessWidget {
@@ -175,7 +160,7 @@ class HomeCatAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(color: HomeTokens.screenBg, width: borderWidth),
-        boxShadow: const [HomeTokens.cardShadow],
+        boxShadow: [HomeTokens.cardShadow],
       ),
       child: ClipOval(
         child: Image.asset(
@@ -219,6 +204,243 @@ class HomeGroupPic extends StatelessWidget {
   }
 }
 
+/// Group-pic banner with housemate sticky notes overlaid on top.
+class HomeStickyNotesBanner extends StatelessWidget {
+  final List<Map<String, dynamic>> members;
+  final List<NoteModel> notes;
+  final String currentUserId;
+  final VoidCallback onAddNote;
+  final Future<void> Function(String noteId) onDeleteNote;
+
+  const HomeStickyNotesBanner({
+    super.key,
+    required this.members,
+    required this.notes,
+    required this.currentUserId,
+    required this.onAddNote,
+    required this.onDeleteNote,
+  });
+
+  int _avatarFor(String authorId) {
+    for (final m in members) {
+      if (m['userId'] == authorId) {
+        return m['avatarIndex'] as int? ?? 0;
+      }
+    }
+    return 0;
+  }
+
+  void _confirmDelete(BuildContext context, NoteModel note) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Delete note?',
+          style: GoogleFonts.poppins(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: AppColors.onPanel,
+          ),
+        ),
+        content: Text(
+          'This sticky note will be removed for everyone in your house.',
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            color: AppColors.onPanel.withValues(alpha: 0.6),
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(color: AppColors.onPanelMuted),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              SoundService.instance.playDelete();
+              await onDeleteNote(note.noteId);
+            },
+            child: Text(
+              'Delete',
+              style: GoogleFonts.poppins(
+                color: const Color(0xFFE040FB),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: HomeTokens.groupPicAspectRatio,
+      child: Stack(
+        clipBehavior: Clip.none,
+        fit: StackFit.expand,
+        children: [
+          HomeGroupPic(members: members),
+          ...notes.asMap().entries.map((entry) {
+            final i = entry.key;
+            final note = entry.value;
+            final slot = HomeTokens.stickyNoteSlots[
+                i % HomeTokens.stickyNoteSlots.length];
+            final rotation = ((i % 5) - 2) * 0.05;
+            final isOwn = note.authorId == currentUserId;
+            final sticky = _StickyNote(
+              content: note.content,
+              authorName: note.authorName,
+              color: HomeTokens.stickyNoteColor(_avatarFor(note.authorId)),
+              maxWidth: 108,
+              showDeleteHint: isOwn,
+            );
+            return Align(
+              alignment: slot,
+              child: Transform.rotate(
+                angle: rotation,
+                child: isOwn
+                    ? GestureDetector(
+                        onTap: () {
+                          SoundService.instance.playPop();
+                          _confirmDelete(context, note);
+                        },
+                        child: sticky,
+                      )
+                    : sticky,
+              ),
+            );
+          }),
+          Align(
+            alignment: Alignment.bottomRight,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 6, bottom: 4),
+              child: Transform.rotate(
+                angle: 0.04,
+                child: GestureDetector(
+                  onTap: () {
+                    SoundService.instance.playPop();
+                    onAddNote();
+                  },
+                  child: _StickyNote(
+                    content: '',
+                    isAddButton: true,
+                    color: const Color(0xFFFFF6B3),
+                    maxWidth: 72,
+                    minHeight: 72,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StickyNote extends StatelessWidget {
+  final String content;
+  final String authorName;
+  final Color color;
+  final double maxWidth;
+  final double minHeight;
+  final bool isAddButton;
+  final bool showDeleteHint;
+
+  const _StickyNote({
+    required this.content,
+    this.authorName = '',
+    required this.color,
+    required this.maxWidth,
+    this.minHeight = 0,
+    this.isAddButton = false,
+    this.showDeleteHint = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(
+        maxWidth: maxWidth,
+        minWidth: isAddButton ? maxWidth : 72,
+        minHeight: isAddButton ? minHeight : 0,
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: isAddButton ? 0 : 10,
+        vertical: isAddButton ? 0 : 8,
+      ),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(4),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x66000000),
+            offset: Offset(2, 3),
+            blurRadius: 6,
+          ),
+        ],
+      ),
+      child: isAddButton
+          ? Center(
+              child: Icon(
+                Icons.add_rounded,
+                size: 36,
+                color: Colors.black.withValues(alpha: 0.55),
+              ),
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    if (authorName.isNotEmpty)
+                      Expanded(
+                        child: Text(
+                          authorName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black.withValues(alpha: 0.45),
+                          ),
+                        ),
+                      ),
+                    if (showDeleteHint)
+                      Icon(
+                        Icons.close_rounded,
+                        size: 14,
+                        color: Colors.black.withValues(alpha: 0.35),
+                      ),
+                  ],
+                ),
+                if (authorName.isNotEmpty) const SizedBox(height: 2),
+                Text(
+                  content,
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black.withValues(alpha: 0.82),
+                    height: 1.25,
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
 
 class HomePodium extends StatelessWidget {
   final List<Map<String, dynamic>> rankedMembers;
@@ -237,6 +459,7 @@ class HomePodium extends StatelessWidget {
     final first = rankedMembers.isNotEmpty ? rankedMembers[0] : null;
     final second = rankedMembers.length > 1 ? rankedMembers[1] : null;
     final third = rankedMembers.length > 2 ? rankedMembers[2] : null;
+    final isLight = ThemeService.instance.isLight;
 
     return AspectRatio(
       aspectRatio: HomeTokens.podiumAspectRatio,
@@ -265,17 +488,27 @@ class HomePodium extends StatelessWidget {
                 right: 0,
                 top: 0,
                 height: h * _glowHeightFrac,
-                child: Image.asset(
-                  HomeTokens.podiumGlowAsset,
-                  fit: BoxFit.fill,
-                ),
+                child: isLight
+                    ? const CustomPaint(
+                        painter: _LightPodiumGlowPainter(),
+                        child: SizedBox.expand(),
+                      )
+                    : Image.asset(
+                        HomeTokens.podiumGlowAsset,
+                        fit: BoxFit.fill,
+                      ),
               ),
               Positioned.fromRect(
                 rect: pedRect,
-                child: Image.asset(
-                  HomeTokens.podiumPedestalAsset,
-                  fit: BoxFit.fill,
-                ),
+                child: isLight
+                    ? const CustomPaint(
+                        painter: _LightPodiumPedestalPainter(),
+                        child: SizedBox.expand(),
+                      )
+                    : Image.asset(
+                        HomeTokens.podiumPedestalAsset,
+                        fit: BoxFit.fill,
+                      ),
               ),
               ...characters,
             ],
@@ -313,6 +546,187 @@ class HomePodium extends StatelessWidget {
   }
 }
 
+/// Soft lavender→mint semicircle — light variation of the dark teal glow art.
+class _LightPodiumGlowPainter extends CustomPainter {
+  const _LightPodiumGlowPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height);
+    final radius = size.width * 0.52;
+
+    final glowPaint = Paint()
+      ..shader = SweepGradient(
+        center: Alignment.bottomCenter,
+        startAngle: 3.14159,
+        endAngle: 2 * 3.14159,
+        colors: const [
+          Color(0x00C8B8E8),
+          Color(0x66D4C0F0),
+          Color(0x99B8E0E8),
+          Color(0xBBD8C8F4),
+          Color(0x99C0D8F0),
+          Color(0x66D4C0F0),
+          Color(0x00C8B8E8),
+        ],
+        stops: const [0.0, 0.15, 0.35, 0.5, 0.65, 0.85, 1.0],
+        transform: const GradientRotation(3.14159),
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
+
+    final path = Path()
+      ..moveTo(center.dx - radius, center.dy)
+      ..arcTo(
+        Rect.fromCircle(center: center, radius: radius),
+        3.14159,
+        3.14159,
+        false,
+      )
+      ..close();
+
+    // Soft fill wash behind the arc.
+    canvas.drawPath(
+      path,
+      Paint()
+        ..shader = RadialGradient(
+          center: Alignment.bottomCenter,
+          radius: 1.0,
+          colors: const [
+            Color(0x55E8DCF8),
+            Color(0x33D0E8F0),
+            Color(0x00FFFFFF),
+          ],
+          stops: const [0.0, 0.55, 1.0],
+        ).createShader(Rect.fromCircle(center: center, radius: radius)),
+    );
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = size.width * 0.045
+        ..shader = glowPaint.shader,
+    );
+
+    // Thin highlight line (Figma glow has a bright rim).
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius * 0.92),
+      3.14159 + 0.35,
+      0.55,
+      false,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = const Color(0xAAFFFFFF)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Frosted lilac glass blocks — light variation of the dark pedestal art.
+class _LightPodiumPedestalPainter extends CustomPainter {
+  const _LightPodiumPedestalPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    // Match dark pedestal proportions: left (2nd), center (1st), right (3rd).
+    _drawBlock(
+      canvas,
+      Rect.fromLTWH(w * 0.02, h * 0.28, w * 0.32, h * 0.72),
+      radius: 10,
+    );
+    _drawBlock(
+      canvas,
+      Rect.fromLTWH(w * 0.66, h * 0.38, w * 0.32, h * 0.62),
+      radius: 10,
+    );
+    // Center last so it sits in front.
+    _drawBlock(
+      canvas,
+      Rect.fromLTWH(w * 0.28, h * 0.02, w * 0.44, h * 0.98),
+      radius: 12,
+      highlight: true,
+    );
+  }
+
+  void _drawBlock(
+    Canvas canvas,
+    Rect rect, {
+    required double radius,
+    bool highlight = false,
+  }) {
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+
+    // Soft drop shadow.
+    canvas.drawRRect(
+      rrect.shift(const Offset(0, 3)),
+      Paint()
+        ..color = const Color(0x284A3F66)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+    );
+
+    // Body — crisp white glass (reads as object on neutral stage).
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: highlight
+              ? const [
+                  Color(0xFFFFFFFF),
+                  Color(0xFFF6F4FA),
+                  Color(0xFFECE8F4),
+                ]
+              : const [
+                  Color(0xFFFFFFFF),
+                  Color(0xFFF8F6FC),
+                  Color(0xFFF0ECF6),
+                ],
+        ).createShader(rect),
+    );
+
+    // Top face sheen.
+    final topFace = Rect.fromLTWH(
+      rect.left,
+      rect.top,
+      rect.width,
+      rect.height * 0.18,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(topFace, Radius.circular(radius)),
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.white.withValues(alpha: 0.85),
+            Colors.white.withValues(alpha: 0.15),
+          ],
+        ).createShader(topFace),
+    );
+
+    // Rim highlight.
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..color = highlight
+            ? const Color(0xCCB794F0)
+            : const Color(0x99C4B0E0),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
 
 class HomeBottomScrollFade extends StatelessWidget {
   const HomeBottomScrollFade({super.key});
@@ -335,14 +749,8 @@ class HomeBottomScrollFade extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Colors.transparent,
-                Colors.black.withValues(alpha: 0.35),
-                Colors.black.withValues(alpha: 0.68),
-                Colors.black.withValues(alpha: 0.88),
-                Colors.black.withValues(alpha: 0.95),
-              ],
-              stops: const [0.0, 0.3, 0.55, 0.8, 1.0],
+              colors: HomiePalette.current.bottomFadeColors,
+              stops: HomiePalette.current.bottomFadeStops,
             ),
           ),
         ),
@@ -366,11 +774,13 @@ class HomeHousemateInvitePlaceholder extends StatelessWidget {
       child: Container(
         height: cardHeight,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        decoration: BoxDecoration(
-          gradient: HomeTokens.memberPanelGradient,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const [HomeTokens.cardShadow],
-        ),
+        decoration: ThemeService.instance.isLight
+            ? AppColors.secondaryCard(radius: 20)
+            : BoxDecoration(
+                gradient: HomeTokens.memberPanelGradient,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [HomeTokens.cardShadow],
+              ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -386,7 +796,7 @@ class HomeHousemateInvitePlaceholder extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Colors.white,
+                color: AppColors.onPanel,
                 height: 1.25,
               ),
             ),
@@ -425,6 +835,8 @@ class HomeFamilyInviteSheet {
       return;
     }
 
+    final isLight = ThemeService.instance.isLight;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.cardBg,
@@ -440,7 +852,7 @@ class HomeFamilyInviteSheet {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: HomiePalette.current.divider,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -450,7 +862,7 @@ class HomeFamilyInviteSheet {
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 6),
@@ -462,30 +874,43 @@ class HomeFamilyInviteSheet {
               ),
             ),
             const SizedBox(height: 24),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isLight ? Colors.white : HomiePalette.current.surfaceBg,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: HomiePalette.current.cardBorder),
+                boxShadow: isLight ? [HomiePalette.current.cardShadow] : null,
+              ),
               child: QrImageView(
                 data: inviteCode,
                 version: QrVersions.auto,
                 size: 200,
                 backgroundColor: Colors.white,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
               ),
             ),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFF1D1D35),
+                gradient: isLight
+                    ? HomiePalette.lightHeroGradient
+                    : null,
+                color: isLight ? null : const Color(0xFF1D1D35),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.pink.withValues(alpha: 0.3)),
+                border: isLight
+                    ? null
+                    : Border.all(
+                        color: AppColors.pink.withValues(alpha: 0.3)),
+                boxShadow: isLight ? AppColors.heroShadow : null,
               ),
               child: Text(
                 inviteCode,
                 style: GoogleFonts.poppins(
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
-                  color: Colors.white,
+                  color: AppColors.onHero,
                   letterSpacing: 8,
                 ),
               ),
@@ -523,7 +948,7 @@ class HomeHouseTitle extends StatelessWidget {
         style: GoogleFonts.poppins(
           fontSize: fontSize,
           fontWeight: FontWeight.w900,
-          color: Colors.white,
+          color: AppColors.onPanel,
           letterSpacing: letterSpacing,
           height: 1.0,
         ),
@@ -547,6 +972,9 @@ class HomeGlassActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = HomiePalette.current;
+    final isLight = !p.useDarkTopPanelImage;
+
     return GestureDetector(
       onTap: onTap,
       child: ClipRRect(
@@ -557,9 +985,17 @@ class HomeGlassActionButton extends StatelessWidget {
             width: width,
             height: 45,
             decoration: BoxDecoration(
-              color: const Color(0xFF252B4C).withValues(alpha: 0.2),
+              color: p.glassButtonFill,
               borderRadius: BorderRadius.circular(15),
-              boxShadow: const [HomeTokens.cardShadow],
+              border: Border.all(
+                color: isLight
+                    ? AppColors.pink.withValues(alpha: 0.35)
+                    : Colors.white.withValues(alpha: 0.12),
+                width: isLight ? 1.5 : 1,
+              ),
+              boxShadow: isLight
+                  ? AppColors.heroShadow
+                  : [HomeTokens.cardShadow],
             ),
             child: Row(
               children: [
@@ -568,6 +1004,10 @@ class HomeGlassActionButton extends StatelessWidget {
                   'assets/images/home/add_icon.svg',
                   width: 31,
                   height: 31,
+                  colorFilter: ColorFilter.mode(
+                    AppColors.onGlassIcon,
+                    BlendMode.srcIn,
+                  ),
                 ),
                 const SizedBox(width: 6),
                 Text(
@@ -575,179 +1015,11 @@ class HomeGlassActionButton extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: AppColors.onPanel,
                   ),
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-
-class HomeNoteSwipeUpLayer extends StatefulWidget {
-  final VoidCallback onTriggered;
-  final double navReservedHeight;
-
-  const HomeNoteSwipeUpLayer({
-    super.key,
-    required this.onTriggered,
-    this.navReservedHeight = 89,
-  });
-
-  @override
-  State<HomeNoteSwipeUpLayer> createState() => _HomeNoteSwipeUpLayerState();
-}
-
-class _HomeNoteSwipeUpLayerState extends State<HomeNoteSwipeUpLayer>
-    with SingleTickerProviderStateMixin {
-  static const double _triggerDistance = 72;
-  static const double _maxPull = 110;
-  static const double _zoneHeight = 72;
-
-  double _pullExtent = 0;
-  late final AnimationController _snapCtrl;
-  Animation<double>? _snapAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _snapCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 220),
-    )..addListener(() {
-        if (_snapAnim != null) {
-          setState(() => _pullExtent = _snapAnim!.value);
-        }
-      });
-  }
-
-  @override
-  void dispose() {
-    _snapCtrl.dispose();
-    super.dispose();
-  }
-
-  void _snapBack() {
-    _snapAnim = Tween<double>(begin: _pullExtent, end: 0).animate(
-      CurvedAnimation(parent: _snapCtrl, curve: Curves.easeOutCubic),
-    );
-    _snapCtrl.forward(from: 0);
-  }
-
-  void _onDragUpdate(DragUpdateDetails details) {
-    if (_snapCtrl.isAnimating) return;
-    setState(() {
-      _pullExtent = (_pullExtent - details.delta.dy).clamp(0, _maxPull);
-    });
-  }
-
-  void _onDragEnd(DragEndDetails details) {
-    final velocity = details.primaryVelocity ?? 0;
-    if (_pullExtent >= _triggerDistance || velocity < -650) {
-      setState(() => _pullExtent = 0);
-      widget.onTriggered();
-      return;
-    }
-    _snapBack();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final safeBottom = MediaQuery.paddingOf(context).bottom;
-    final layerHeight = safeBottom + widget.navReservedHeight + _zoneHeight;
-    final hintOpacity = 0.35 + (_pullExtent / _maxPull) * 0.55;
-
-    return Positioned(
-      left: 0,
-      right: 0,
-      bottom: 0,
-      height: layerHeight,
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onVerticalDragUpdate: _onDragUpdate,
-        onVerticalDragEnd: _onDragEnd,
-        child: Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.bottomCenter,
-          children: [
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: EdgeInsets.only(bottom: safeBottom + 18),
-                child: Opacity(
-                  opacity: hintOpacity.clamp(0.0, 1.0),
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.55),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Transform.translate(
-              offset: Offset(0, -_pullExtent),
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    bottom: safeBottom + widget.navReservedHeight + 8,
-                  ),
-                  child: Opacity(
-                    opacity: (_pullExtent / _triggerDistance).clamp(0.0, 1.0),
-                    child: const _NotePeekChip(),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NotePeekChip extends StatelessWidget {
-  const _NotePeekChip();
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(15),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          width: 165,
-          height: 45,
-          decoration: BoxDecoration(
-            color: const Color(0xFF252B4C).withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(15),
-            boxShadow: const [HomeTokens.cardShadow],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SvgPicture.asset(
-                'assets/images/home/add_icon.svg',
-                width: 28,
-                height: 28,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'New note',
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ],
           ),
         ),
       ),

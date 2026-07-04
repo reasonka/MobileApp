@@ -6,6 +6,7 @@ import '../../models/bill_model.dart';
 import '../../services/firestore_service.dart';
 import '../../widgets/shared_app_bar.dart';
 import '../../services/sound_service.dart';
+import '../theme.dart';
 
 
 
@@ -157,11 +158,7 @@ class _BillsScreenState extends State<BillsScreen> {
                         child: _SummaryCard(
                           label: 'You owe',
                           amount: youOwe,
-                          gradientColors: const [
-                            Color(0xFF6A1B9A),
-                            Color(0xFF4A148C),
-                            Color(0xFF2A0A5E),
-                          ],
+                          gradient: AppColors.youOweGradient,
                         ),
                       ),
                       const SizedBox(width: 14),
@@ -169,11 +166,7 @@ class _BillsScreenState extends State<BillsScreen> {
                         child: _SummaryCard(
                           label: 'Owe you',
                           amount: owedToYou,
-                          gradientColors: const [
-                            Color(0xFF00695C),
-                            Color(0xFF004D40),
-                            Color(0xFF002B26),
-                          ],
+                          gradient: AppColors.oweYouGradient,
                         ),
                       ),
                     ],
@@ -262,12 +255,12 @@ class _BillsScreenState extends State<BillsScreen> {
 class _SummaryCard extends StatelessWidget {
   final String label;
   final double amount;
-  final List<Color> gradientColors;
+  final LinearGradient gradient;
 
   const _SummaryCard({
     required this.label,
     required this.amount,
-    required this.gradientColors,
+    required this.gradient,
   });
 
   @override
@@ -276,15 +269,10 @@ class _SummaryCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          colors: gradientColors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border.all(color: _cardBorder, width: 1),
+        gradient: gradient,
         boxShadow: [
           BoxShadow(
-            color: gradientColors.first.withOpacity(0.35),
+            color: gradient.colors.first.withValues(alpha: 0.35),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -293,18 +281,21 @@ class _SummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: _textSec)),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: AppColors.onBalancePanelSecondary,
+            ),
+          ),
           const SizedBox(height: 8),
           Text(
             '\$${amount.toStringAsFixed(2)}',
             style: GoogleFonts.poppins(
               fontSize: 32,
               fontWeight: FontWeight.w800,
-              color: _textPri,
+              color: AppColors.onBalancePanel,
               letterSpacing: -1,
             ),
           ),
@@ -348,10 +339,7 @@ class _BillCard extends StatelessWidget {
               
           Positioned.fill(
             child: IgnorePointer(     
-            child: Image.asset(
-              'assets/images/BillMainPanel.png',
-              fit: BoxFit.cover,
-            ),
+            child: HomiePanelFill(darkAsset: 'assets/images/BillMainPanel.png', fit: BoxFit.cover),
             )
           ),
                            
@@ -367,10 +355,10 @@ class _BillCard extends StatelessWidget {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.08),
+                            color: AppColors.onPanelDivider,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                                color: Colors.white.withOpacity(0.12)),
+                                color: AppColors.onPanelDivider),
                           ),
                           child: Center(
                             child: Text(
@@ -458,10 +446,7 @@ class _BillCard extends StatelessWidget {
                     child: Stack(
                       children: [
                         Positioned.fill(
-                          child: Image.asset(
-                            'assets/images/BillSubPanel.png',
-                            fit: BoxFit.fill,
-                          ),
+                          child: HomiePanelFill(darkAsset: 'assets/images/BillSubPanel.png', fit: BoxFit.fill),
                         ),
                         SizedBox(
                           height: 60,
@@ -552,8 +537,8 @@ class _BillCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
                       color: settled
-                          ? Colors.white.withOpacity(0.05)
-                          : Colors.white.withOpacity(0.08),
+                          ? AppColors.onPanelDivider
+                          : AppColors.onPanelDivider,
                       width: 1,
                     ),
                   ),
@@ -704,10 +689,7 @@ class _BillDetailSheetState extends State<_BillDetailSheet> {
         children: [
           
           Positioned.fill(
-            child: Image.asset(
-              'assets/images/BillSubPanel.png',
-              fit: BoxFit.cover,
-            ),
+            child: HomiePanelFill(darkAsset: 'assets/images/BillSubPanel.png', fit: BoxFit.cover),
           ),
           
           Positioned.fill(
@@ -891,7 +873,7 @@ class _BillDetailSheetState extends State<_BillDetailSheet> {
                                 decoration: BoxDecoration(
                                   color: paid
                                       ? _green.withOpacity(0.2)
-                                      : Colors.white.withOpacity(0.05),
+                                      : AppColors.onPanelDivider,
                                   shape: BoxShape.circle,
                                   border: Border.all(
                                     color:
@@ -1039,10 +1021,7 @@ class _NewBillSheetState extends State<_NewBillSheet> {
         children: [
           
           Positioned.fill(
-            child: Image.asset(
-              'assets/images/BillSubPanel.png',
-              fit: BoxFit.cover,
-            ),
+            child: HomiePanelFill(darkAsset: 'assets/images/BillSubPanel.png', fit: BoxFit.cover),
           ),
           
           Positioned.fill(
@@ -1261,7 +1240,7 @@ class _NewBillSheetState extends State<_NewBillSheet> {
                       },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _pink,
-                      foregroundColor: _textPri,
+                      foregroundColor: AppColors.onAccent,
                       disabledBackgroundColor: _pink.withOpacity(0.4),
                       padding:
                           const EdgeInsets.symmetric(vertical: 16),
@@ -1274,7 +1253,7 @@ class _NewBillSheetState extends State<_NewBillSheet> {
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2),
+                                color: AppColors.onAccent, strokeWidth: 2),
                           )
                         : Text('Add Bill',
                             style: GoogleFonts.poppins(

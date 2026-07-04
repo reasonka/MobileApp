@@ -4,6 +4,7 @@ import '../../models/event_model.dart';
 import '../../services/firestore_service.dart';
 import '../../services/sound_service.dart';
 import '../../services/notification_service.dart';
+import '../theme.dart';
 
 class EditEventSheet extends StatefulWidget {
   final EventModel event;
@@ -139,7 +140,7 @@ class _EditEventSheetState extends State<EditEventSheet> {
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : Colors.white70,
+            color: selected ? Colors.white : AppColors.onPanelSecondary,
             fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
@@ -153,40 +154,38 @@ class _EditEventSheetState extends State<EditEventSheet> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage('assets/images/calendar/EventMainPanel.png'),
-          fit: BoxFit.fill,
-        ),
+      decoration: HomiePanel.imageOrCard(
+        darkAsset: 'assets/images/calendar/EventMainPanel.png',
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 20),
-          const Text(
+          Text(
             "Edit event",
-            style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+            style: TextStyle(color: AppColors.onPanel, fontSize: 22, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
           TextField(
             controller: _titleController,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: AppColors.onPanel),
             decoration: InputDecoration(
               hintText: "Event title",
               hintStyle: const TextStyle(color: Colors.grey),
               filled: true,
-              fillColor: Colors.black.withOpacity(0.2),
+              fillColor: HomiePalette.current.fieldFill,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
             ),
           ),
           const SizedBox(height: 16),
           ListTile(
-            title: const Text("Event date", style: TextStyle(color: Colors.white70)),
+            title: Text("Event date", style: TextStyle(color: AppColors.onPanelSecondary)),
             subtitle: Text(
               DateFormat('yyyy-MM-dd').format(_selectedDate),
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(color: AppColors.onPanel, fontWeight: FontWeight.bold),
             ),
             trailing: const Icon(Icons.calendar_month, color: Color(0xFFE040FB)),
             tileColor: Colors.black.withOpacity(0.2),
@@ -198,9 +197,9 @@ class _EditEventSheetState extends State<EditEventSheet> {
           ),
           const SizedBox(height: 16),
 
-          const Align(
+          Align(
             alignment: Alignment.centerLeft,
-            child: Text("Reminder", style: TextStyle(color: Colors.white70, fontSize: 13)),
+            child: Text("Reminder", style: TextStyle(color: AppColors.onPanelSecondary, fontSize: 13)),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -224,20 +223,20 @@ class _EditEventSheetState extends State<EditEventSheet> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.notifications_outlined, color: Colors.white60, size: 18),
+                  Icon(Icons.notifications_outlined, color: AppColors.onPanelSecondary, size: 18),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       _reminderAt == null
                           ? 'Pick custom date & time'
                           : 'Remind at ${DateFormat('dd/MM/yyyy HH:mm').format(_reminderAt!)}',
-                      style: const TextStyle(color: Colors.white70, fontSize: 13),
+                      style: TextStyle(color: AppColors.onPanelSecondary, fontSize: 13),
                     ),
                   ),
                   if (_reminderAt != null)
                     GestureDetector(
                       onTap: _clearReminder,
-                      child: const Icon(Icons.close, color: Colors.white38, size: 18),
+                      child: Icon(Icons.close, color: AppColors.onPanelMuted, size: 18),
                     ),
                 ],
               ),
@@ -255,7 +254,7 @@ class _EditEventSheetState extends State<EditEventSheet> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
-            child: const Text("Update Event", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+            child: Text("Update Event", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.onAccent)),
           ),
 
           // DEV-ONLY: fires a notification immediately to verify wiring.
@@ -268,13 +267,13 @@ class _EditEventSheetState extends State<EditEventSheet> {
                   : _titleController.text.trim(),
             ),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Colors.white24),
+              side: BorderSide(color: AppColors.onPanelMuted),
               padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
-            child: const Text(
+            child: Text(
               "🧪 Simulate notification now (dev)",
-              style: TextStyle(fontSize: 13, color: Colors.white60),
+              style: TextStyle(fontSize: 13, color: AppColors.onPanelSecondary),
             ),
           ),
 

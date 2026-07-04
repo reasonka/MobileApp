@@ -66,7 +66,7 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: AppColors.onPanel,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -144,7 +144,7 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen> {
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(
-                            color: Colors.white.withOpacity(0.2)),
+                            color: AppColors.onPanel.withOpacity(0.2)),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),

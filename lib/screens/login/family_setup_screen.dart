@@ -237,7 +237,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: AppColors.onPanel,
                 ),
               ),
               TextSpan(
@@ -269,9 +269,9 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: AppColors.onPanelDivider,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.10)),
+        border: Border.all(color: AppColors.onPanelDivider),
       ),
       child: Row(
         children: [
@@ -345,9 +345,9 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
+            color: AppColors.onPanelDivider,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withOpacity(0.10)),
+            border: Border.all(color: AppColors.onPanelDivider),
           ),
           child: Column(
             children: [
@@ -364,7 +364,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 36,
                   fontWeight: FontWeight.w800,
-                  color: Colors.white,
+                  color: AppColors.onPanel,
                   letterSpacing: 8,
                 ),
               ),

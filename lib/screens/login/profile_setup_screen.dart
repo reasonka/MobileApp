@@ -73,7 +73,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       lastDate: DateTime(now.year - 5),
       builder: (context, child) => Theme(
         data: ThemeData.dark().copyWith(
-          colorScheme: const ColorScheme.dark(
+          colorScheme: ColorScheme.dark(
             primary: AppColors.pink,
             onPrimary: Colors.white,
             surface: AppColors.cardBg,
@@ -164,11 +164,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       onTap: () => Navigator.pop(context),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: SvgPicture.asset(
-                          SettingsTokens.iconAsset('back'),
-                          width: 13,
-                          height: 25,
-                        ),
+                        child: SettingsBackIcon(width: 13, height: 25),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -191,9 +187,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         : _formatDate(_birthday!),
                     isPlaceholder: _birthday == null,
                     onTap: _pickBirthday,
-                    trailing: const Icon(
+                    trailing: Icon(
                       Icons.calendar_today_outlined,
-                      color: Colors.white70,
+                      color: LoginTokens.fieldTextColor,
                       size: 18,
                     ),
                   ),
@@ -231,7 +227,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: AppColors.onPanel,
                 ),
               ),
               TextSpan(
@@ -274,7 +270,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: AppColors.onPanel,
           ),
         ),
         const SizedBox(height: 4),
@@ -308,7 +304,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
-            color: selected ? Colors.white : Colors.transparent,
+            color: selected ? AppColors.pink : Colors.transparent,
             width: 3,
           ),
           boxShadow: selected

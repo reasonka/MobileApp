@@ -485,6 +485,9 @@ Future<List<double>> getBalances(String houseId, String currentUserId) async {
         });
   }
 
+  Future<void> deleteNote(String noteId) =>
+      _db.collection('notes').doc(noteId).delete();
+
   Future<void> addNote({
     required String content,
     required String authorId,
@@ -492,14 +495,14 @@ Future<List<double>> getBalances(String houseId, String currentUserId) async {
     required String houseId,
   }) async {
     final now = DateTime.now();
-    final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    final expiresAt = now.add(const Duration(hours: 24));
     await _db.collection('notes').add({
       'content': content,
       'authorId': authorId,
       'authorName': authorName,
       'houseId': houseId,
       'createdAt': FieldValue.serverTimestamp(),
-      'expiresAt': Timestamp.fromDate(endOfDay),
+      'expiresAt': Timestamp.fromDate(expiresAt),
     });
   }
 }

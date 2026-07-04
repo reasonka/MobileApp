@@ -19,8 +19,7 @@ class BalanceSummaryRow extends StatelessWidget {
           child: _BalanceCard(
             label: 'You owe',
             amount: youOwe,
-            gradientColors: const [AppColors.oweStart, AppColors.oweEnd],
-            amountColor: Colors.white,
+            gradient: AppColors.youOweGradient,
           ),
         ),
         const SizedBox(width: 12),
@@ -28,8 +27,7 @@ class BalanceSummaryRow extends StatelessWidget {
           child: _BalanceCard(
             label: 'Owe you',
             amount: oweYou,
-            gradientColors: const [AppColors.owedStart, AppColors.owedEnd],
-            amountColor: Colors.white,
+            gradient: AppColors.oweYouGradient,
           ),
         ),
       ],
@@ -40,30 +38,27 @@ class BalanceSummaryRow extends StatelessWidget {
 class _BalanceCard extends StatelessWidget {
   final String label;
   final double amount;
-  final List<Color> gradientColors;
-  final Color amountColor;
+  final LinearGradient gradient;
 
   const _BalanceCard({
     required this.label,
     required this.amount,
-    required this.gradientColors,
-    required this.amountColor,
+    required this.gradient,
   });
 
   @override
   Widget build(BuildContext context) {
+    final textColor = AppColors.onBalancePanel;
+    final secondary = AppColors.onBalancePanelSecondary;
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        gradient: LinearGradient(
-          colors: gradientColors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: gradient,
         boxShadow: [
           BoxShadow(
-            color: gradientColors.first.withOpacity(0.4),
+            color: gradient.colors.first.withValues(alpha: 0.35),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -75,7 +70,7 @@ class _BalanceCard extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white70,
+                  color: secondary,
                   fontWeight: FontWeight.w600,
                 ),
           ),
@@ -83,7 +78,7 @@ class _BalanceCard extends StatelessWidget {
           Text(
             '\$${amount.toStringAsFixed(1)}',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: amountColor,
+                  color: textColor,
                   fontWeight: FontWeight.w900,
                   fontSize: 30,
                 ),

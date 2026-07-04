@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../models/chore_model.dart';
 import '../../models/note_model.dart';
 import '../../services/firestore_service.dart';
+import '../../services/sound_service.dart';
+import '../../services/theme_service.dart';
 import '../../theme.dart';
 import 'home_widgets.dart';
 import 'new_chore_sheet.dart';
@@ -31,8 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _inviteCode = '';
   bool _initialized = false;
 
-  static const double _fabBottomInset = 123; 
-  static const double _navReservedHeight = 89; 
+  static const double _fabBottomInset = 123;
 
   @override
   void initState() {
@@ -118,9 +119,9 @@ void _listenToMembers() async {
   @override
   Widget build(BuildContext context) {
     if (!_initialized) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: HomeTokens.screenBg,
-        body: Center(child: CircularProgressIndicator(color: AppColors.pink)),
+        body: const Center(child: CircularProgressIndicator(color: AppColors.pink)),
       );
     }
 
@@ -188,10 +189,6 @@ void _listenToMembers() async {
                       ],
                     ),
                   const HomeBottomScrollFade(),
-                  HomeNoteSwipeUpLayer(
-                    navReservedHeight: _navReservedHeight,
-                    onTriggered: _openNewNote,
-                  ),
                   Positioned(
                     left: HomeTokens.horizontalPadding,
                     bottom: fabBottom,
@@ -266,7 +263,7 @@ void _listenToMembers() async {
       width: 200,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: AppColors.onPanelDivider,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.pink.withOpacity(0.4)),
       ),
@@ -280,7 +277,7 @@ void _listenToMembers() async {
             style: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Colors.white),
+                color: AppColors.onPanel),
           ),
           Text(
             'proposed by ${creator['name']}',
@@ -336,7 +333,7 @@ void _listenToMembers() async {
                 style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white),
+                    color: AppColors.onPanel),
               ),
               const SizedBox(height: 24),
               Row(
@@ -351,7 +348,7 @@ void _listenToMembers() async {
                       max: 20,
                       divisions: 19,
                       activeColor: AppColors.pink,
-                      inactiveColor: Colors.white12,
+                      inactiveColor: AppColors.onPanelDivider,
                       label: '$tempXP XP',
                       onChanged: (v) => setS(() => tempXP = v.round()),
                     ),
@@ -393,7 +390,7 @@ void _listenToMembers() async {
                       style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
-                          color: Colors.white)),
+                          color: AppColors.onPanel)),
                 ),
               ),
             ],
@@ -426,6 +423,7 @@ void _listenToMembers() async {
               chores: myChores,
               isOwner: true,
               onToggle: (chore) => _toggleChore(chore),
+              onDelete: (chore) => _confirmDeleteChore(chore),
             ),
           ),
           _AvatarCircle(
@@ -547,6 +545,71 @@ void _listenToMembers() async {
     }
   }
 
+  void _confirmDeleteChore(ChoreModel chore) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: HomiePalette.current.dialogBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Delete chore?',
+          style: GoogleFonts.poppins(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        content: Text(
+          '"${chore.title}" will be removed for everyone in your house.',
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            color: AppColors.textSecondary,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(color: AppColors.textMuted),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _deleteChore(chore);
+            },
+            child: Text(
+              'Delete',
+              style: GoogleFonts.poppins(
+                color: AppColors.pink,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteChore(ChoreModel chore) async {
+    try {
+      SoundService.instance.playDelete();
+      await _fs.deleteChore(chore.choreId);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Could not delete chore',
+            style: GoogleFonts.poppins(),
+          ),
+        ),
+      );
+    }
+  }
+
   void _openNewNote() {
     showModalBottomSheet(
       context: context,
@@ -561,6 +624,22 @@ void _listenToMembers() async {
         authorName: _myMember['name'] as String? ?? '',
       ),
     );
+  }
+
+  Future<void> _deleteNote(String noteId) async {
+    try {
+      await _fs.deleteNote(noteId);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Could not delete note',
+            style: GoogleFonts.poppins(),
+          ),
+        ),
+      );
+    }
   }
 
   
@@ -582,14 +661,14 @@ void _listenToMembers() async {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('🐱', style: TextStyle(fontSize: 52)),
+              Text('🐱', style: TextStyle(fontSize: 52)),
               const SizedBox(height: 12),
               Text(
                 'Slow down!',
                 style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white),
+                    color: AppColors.onPanel),
               ),
               const SizedBox(height: 8),
               Text(
@@ -610,7 +689,7 @@ void _listenToMembers() async {
                   onPressed: () => Navigator.pop(context),
                   child: Text('Got it!',
                       style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w600, color: Colors.white)),
+                          fontWeight: FontWeight.w600, color: AppColors.onPanel)),
                 ),
               ),
             ],
@@ -673,7 +752,7 @@ void _listenToMembers() async {
             decoration: BoxDecoration(
               gradient: HomeTokens.leaderboardListGradient,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: const [HomeTokens.cardShadow],
+              boxShadow: AppColors.heroShadow,
             ),
             child: Column(
               children: ranked.asMap().entries.map((entry) {
@@ -700,7 +779,7 @@ void _listenToMembers() async {
                             style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.white),
+                                color: AppColors.onHero),
                           ),
                           const Spacer(),
                           Text(
@@ -708,14 +787,15 @@ void _listenToMembers() async {
                             style: GoogleFonts.poppins(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white),
+                                color: AppColors.onHeroSecondary),
                           ),
                         ],
                       ),
                     ),
                     if (!isLast)
                       Divider(
-                          color: Colors.white.withOpacity(0.08), height: 1),
+                          color: AppColors.onHero.withValues(alpha: 0.2),
+                          height: 1),
                   ],
                 );
               }).toList(),
@@ -734,18 +814,12 @@ void _listenToMembers() async {
         HomeTokens.horizontalPadding,
         0,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          HomeGroupPic(members: _members),
-          if (notes.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            ...notes.map((n) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _NoteCard(note: n, currentUserId: widget.userId),
-                )),
-          ],
-        ],
+      child: HomeStickyNotesBanner(
+        members: _members,
+        notes: notes,
+        currentUserId: widget.userId,
+        onAddNote: _openNewNote,
+        onDeleteNote: _deleteNote,
       ),
     );
   }
@@ -779,11 +853,13 @@ class _ChoreCard extends StatelessWidget {
   final List<ChoreModel> chores;
   final bool isOwner;
   final void Function(ChoreModel)? onToggle;
+  final void Function(ChoreModel)? onDelete;
 
   const _ChoreCard({
     required this.chores,
     required this.isOwner,
     this.onToggle,
+    this.onDelete,
   });
 
   @override
@@ -810,7 +886,7 @@ class _ChoreCard extends StatelessWidget {
       final right = i + 1 < chores.length ? chores[i + 1] : null;
       rows.add(_choreRow(left, right, context));
       if (i + 2 < chores.length) {
-        rows.add(Divider(color: Colors.white.withOpacity(0.08), height: 1));
+        rows.add(Divider(color: AppColors.onPanelDivider, height: 1));
       }
     }
 
@@ -824,11 +900,15 @@ class _ChoreCard extends StatelessWidget {
     );
   }
 
-  BoxDecoration _cardDecoration() => BoxDecoration(
-        gradient: HomeTokens.mainChoreGradient,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [HomeTokens.cardShadow],
-      );
+  BoxDecoration _cardDecoration() {
+    final secondary = AppColors.secondaryCard(radius: 20);
+    if (ThemeService.instance.isLight) return secondary;
+    return BoxDecoration(
+      gradient: HomeTokens.mainChoreGradient,
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [HomeTokens.cardShadow],
+    );
+  }
 
   Widget _choreRow(ChoreModel left, ChoreModel? right, BuildContext ctx) {
     return Padding(
@@ -845,65 +925,78 @@ class _ChoreCard extends StatelessWidget {
 
   Widget _choreItem(ChoreModel chore, BuildContext ctx) {
     final canToggle = isOwner && onToggle != null;
+    final canDelete = isOwner && onDelete != null;
     final isPending = chore.xpStatus == 'pending';
 
-    return Row(
-      children: [
-        Expanded(
-          child: Row(
-            children: [
-              Flexible(
-                child: Text(
-                  chore.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: chore.completed ? Colors.white38 : Colors.white,
-                    decoration: chore.completed
-                        ? TextDecoration.lineThrough
-                        : null,
-                    decorationColor: Colors.white38,
+    return GestureDetector(
+      onLongPress: canDelete
+          ? () {
+              SoundService.instance.playPop();
+              onDelete!(chore);
+            }
+          : null,
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    chore.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: chore.completed
+                          ? AppColors.onPanelMuted
+                          : AppColors.onPanel,
+                      decoration: chore.completed
+                          ? TextDecoration.lineThrough
+                          : null,
+                      decorationColor: AppColors.onPanelMuted,
+                    ),
                   ),
                 ),
-              ),
-              if (isPending) ...[
-                const SizedBox(width: 4),
-                const Icon(Icons.timer_outlined,
-                    color: AppColors.pink, size: 12),
+                if (isPending) ...[
+                  const SizedBox(width: 4),
+                  const Icon(Icons.timer_outlined,
+                      color: AppColors.pink, size: 12),
+                ],
               ],
-            ],
-          ),
-        ),
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: canToggle ? () => onToggle!(chore) : null,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: chore.completed ? AppColors.pink : Colors.white38,
-                width: 1.5,
-              ),
-              color: chore.completed
-                  ? AppColors.pink.withOpacity(0.25)
-                  : Colors.transparent,
             ),
-            child: chore.completed
-                ? SvgPicture.asset(
-                    'assets/images/home/checkmark.svg',
-                    width: 14,
-                    height: 14,
-                  )
-                : null,
           ),
-        ),
-        const SizedBox(width: 8),
-      ],
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: canToggle ? () => onToggle!(chore) : null,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color:
+                      chore.completed ? AppColors.pink : AppColors.onPanelMuted,
+                  width: 1.5,
+                ),
+                color: chore.completed
+                    ? AppColors.pink.withValues(alpha: 0.25)
+                    : Colors.transparent,
+              ),
+              child: chore.completed
+                  ? SvgPicture.asset(
+                      'assets/images/home/checkmark.svg',
+                      width: 14,
+                      height: 14,
+                    )
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
     );
   }
 }
@@ -935,11 +1028,13 @@ class _HousemateCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          gradient: HomeTokens.memberPanelGradient,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const [HomeTokens.cardShadow],
-        ),
+        decoration: ThemeService.instance.isLight
+            ? AppColors.secondaryCard(radius: 20)
+            : BoxDecoration(
+                gradient: HomeTokens.memberPanelGradient,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [HomeTokens.cardShadow],
+              ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -953,7 +1048,7 @@ class _HousemateCard extends StatelessWidget {
                 style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white),
+                    color: AppColors.onPanel),
               ),
               if (extra > 0)
                 Text(
@@ -993,7 +1088,7 @@ class _HousemateOverlay extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardBg,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.12)),
+        border: Border.all(color: AppColors.onPanelDivider),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1005,7 +1100,7 @@ class _HousemateOverlay extends StatelessWidget {
             style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Colors.white),
+                color: AppColors.onPanel),
           ),
           const SizedBox(height: 4),
           Text(
@@ -1023,65 +1118,6 @@ class _HousemateOverlay extends StatelessWidget {
               'Close',
               style: GoogleFonts.poppins(color: AppColors.pink),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-
-
-class _NoteCard extends StatelessWidget {
-  final NoteModel note;
-  final String currentUserId;
-
-  const _NoteCard({required this.note, required this.currentUserId});
-
-  @override
-  Widget build(BuildContext context) {
-    final isOwn = note.authorId == currentUserId;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isOwn
-            ? AppColors.pink.withOpacity(0.12)
-            : Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isOwn
-              ? AppColors.pink.withOpacity(0.35)
-              : Colors.white.withOpacity(0.08),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                note.authorName,
-                style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: isOwn ? AppColors.pink : AppColors.textSecondary),
-              ),
-              const Spacer(),
-              const Icon(Icons.schedule, color: Colors.white24, size: 13),
-              const SizedBox(width: 3),
-              Text(
-                'expires midnight',
-                style: GoogleFonts.poppins(
-                    fontSize: 11, color: Colors.white24),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            note.content,
-            style: GoogleFonts.poppins(
-                fontSize: 14, color: Colors.white),
           ),
         ],
       ),
@@ -1121,7 +1157,7 @@ class _SmallButton extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: AppColors.onPanel,
             ),
           ),
         ),

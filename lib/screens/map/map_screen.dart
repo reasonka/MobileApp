@@ -3,7 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
-import '../../widgets/shared_app_bar.dart';
+import '../../theme.dart';
 import '../home/home_widgets.dart';
 
 class MapScreen extends StatefulWidget {
@@ -125,7 +125,7 @@ class _MapScreenState extends State<MapScreen> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: HomiePalette.current.cardBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -138,8 +138,8 @@ class _MapScreenState extends State<MapScreen> {
               children: [
                 Text(
                   'Notify $memberName',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: AppColors.onPanel,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -195,25 +195,13 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D1A),
+      backgroundColor: HomiePalette.current.scaffoldBg,
       body: !_checked
           ? const Center(child: CircularProgressIndicator())
           : _permissionIssue != null
-              ? CustomScrollView(
-                  slivers: [
-                    HouseAppBar(
-                      houseId: widget.houseId,
-                      currentUserId: widget.currentUserId,
-                      weekRangeLabel: '',
-                    ),
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: _ErrorState(
-                        message: _permissionIssue!,
-                        onRetry: _checkPermissions,
-                      ),
-                    ),
-                  ],
+              ? _ErrorState(
+                  message: _permissionIssue!,
+                  onRetry: _checkPermissions,
                 )
               : _buildMapWithOverlay(),
     );
@@ -227,19 +215,7 @@ class _MapScreenState extends State<MapScreen> {
           .snapshots(),
       builder: (context, snap) {
         if (snap.hasError) {
-          return CustomScrollView(
-            slivers: [
-              HouseAppBar(
-                houseId: widget.houseId,
-                currentUserId: widget.currentUserId,
-                weekRangeLabel: '',
-              ),
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: _ErrorState(message: 'Firestore error: ${snap.error}'),
-              ),
-            ],
-          );
+          return _ErrorState(message: 'Firestore error: ${snap.error}');
         }
         if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
@@ -250,27 +226,15 @@ class _MapScreenState extends State<MapScreen> {
             .toList();
 
         if (members.isEmpty) {
-          return CustomScrollView(
-            slivers: [
-              HouseAppBar(
-                houseId: widget.houseId,
-                currentUserId: widget.currentUserId,
-                weekRangeLabel: '',
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'No location data yet.\nMake sure location permissions are granted.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.onPanelMuted),
               ),
-              const SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text(
-                      'No location data yet.\nMake sure location permissions are granted.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white54),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           );
         }
 
@@ -285,55 +249,45 @@ class _MapScreenState extends State<MapScreen> {
 
         return Stack(
           children: [
-            CustomScrollView(
-              slivers: [
-                HouseAppBar(
-                  houseId: widget.houseId,
-                  currentUserId: widget.currentUserId,
-                  weekRangeLabel: '',
-                ),
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: FlutterMap(
-                    mapController: _mapController,
-                    options: MapOptions(initialCenter: center, initialZoom: 15),
-                    children: [
-                      TileLayer(
-                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'com.example.homie',
-                        errorTileCallback: (tile, error, stackTrace) {
-                          debugPrint('Tile load failed: $error');
-                        },
-                      ),
-                      MarkerLayer(
-                        markers: members.map((doc) {
-                          final d = doc.data();
-                          final name = d['name'] as String? ?? 'Housemate';
-                          return Marker(
-                            point: LatLng(d['lastLat'], d['lastLng']),
-                            width: 64,
-                            height: 92,
-                            alignment: Alignment.topCenter,
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: () => _onMarkerTap(
-                                memberId: doc.id,
-                                memberName: name,
-                              ),
-                              child: _MemberPin(
-                                avatarIndex: d['avatarIndex'] as int? ?? 0,
-                                battery: d['batteryLevel'] as int? ?? 0,
-                                isSelf: doc.id == widget.currentUserId,
-                                isSelected: doc.id == _selectedMemberId,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ],
+            Positioned.fill(
+              child: FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(initialCenter: center, initialZoom: 15),
+                children: [
+                  TileLayer(
+                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.example.homie',
+                    errorTileCallback: (tile, error, stackTrace) {
+                      debugPrint('Tile load failed: $error');
+                    },
                   ),
-                ),
-              ],
+                  MarkerLayer(
+                    markers: members.map((doc) {
+                      final d = doc.data();
+                      final name = d['name'] as String? ?? 'Housemate';
+                      return Marker(
+                        point: LatLng(d['lastLat'], d['lastLng']),
+                        width: 64,
+                        height: 92,
+                        alignment: Alignment.topCenter,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => _onMarkerTap(
+                            memberId: doc.id,
+                            memberName: name,
+                          ),
+                          child: _MemberPin(
+                            avatarIndex: d['avatarIndex'] as int? ?? 0,
+                            battery: d['batteryLevel'] as int? ?? 0,
+                            isSelf: doc.id == widget.currentUserId,
+                            isSelected: doc.id == _selectedMemberId,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
             ),
             Positioned(
               left: 0,
@@ -380,7 +334,7 @@ class _MemberAvatarStrip extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A2E).withOpacity(0.92),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: AppColors.onPanelDivider),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.4),
@@ -428,7 +382,7 @@ class _MemberAvatarStrip extends StatelessWidget {
                 Text(
                   isSelf ? 'You' : name,
                   style: TextStyle(
-                    color: isSelected ? const Color(0xFF64FFDA) : Colors.white70,
+                    color: isSelected ? const Color(0xFF64FFDA) : AppColors.onPanelSecondary,
                     fontSize: 10,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
                   ),
@@ -477,8 +431,8 @@ class _NotifyOption extends StatelessWidget {
               const SizedBox(width: 12),
               Text(
                 label,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: AppColors.onPanel,
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                 ),
@@ -505,10 +459,10 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.location_off, color: Colors.white38, size: 40),
+            Icon(Icons.location_off, color: AppColors.onPanelMuted, size: 40),
             const SizedBox(height: 12),
             Text(message, textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white70)),
+                style: TextStyle(color: AppColors.onPanelSecondary)),
             if (onRetry != null) ...[
               const SizedBox(height: 16),
               ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
@@ -564,7 +518,7 @@ class _MemberPin extends StatelessWidget {
             color: isSelected ? const Color(0xFF162338) : const Color(0xFF1A1A2E),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: isSelected ? const Color(0xFF64FFDA) : Colors.white12,
+              color: isSelected ? const Color(0xFF64FFDA) : AppColors.onPanelDivider,
               width: isSelected ? 2 : 1,
             ),
             boxShadow: [
@@ -589,8 +543,8 @@ class _MemberPin extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     '$battery%',
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: AppColors.onPanelSecondary,
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
                     ),
@@ -605,7 +559,7 @@ class _MemberPin extends StatelessWidget {
           width: 16,
           height: 16,
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF64FFDA) : Colors.white24,
+            color: isSelected ? const Color(0xFF64FFDA) : AppColors.onPanelMuted,
             shape: BoxShape.circle,
           ),
         ),

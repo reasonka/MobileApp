@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import '../login/profile_setup_screen.dart';
 import '../profile_screen.dart';
 import '../../services/firestore_service.dart';
 import '../../services/sound_service.dart';
+import '../../services/theme_service.dart';
+import '../../theme.dart';
 import 'settings_detail_screens.dart';
 import 'settings_widgets.dart';
 
@@ -36,9 +39,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _searchQuery = '';
   bool _isOwner = false;
 
-  static const _card = Color(0xFF1A1A2E);
+  static Color get _card => HomiePalette.current.cardBg;
   static const _pink = Color(0xFFE040FB);
-  static const _textSec = Color(0xFFB0ADCC);
+  static Color get _textSec => AppColors.textSecondary;
 
   @override
   void initState() {
@@ -72,26 +75,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  void _open(Widget screen, {bool refreshOnReturn = false}) {
+    SoundService.instance.playPop();
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => screen),
+    ).then((_) {
+      if (refreshOnReturn && mounted) _load();
+    });
+  }
+
   List<_MenuItem> get _menuItems {
     final items = [
-      _MenuItem(label: 'Account', icon: 'account', onTap: () => _toast('Account')),
+      _MenuItem(
+        label: 'Account',
+        icon: 'account',
+        onTap: () => _open(
+          ProfileSetupScreen(
+            uid: widget.userId,
+            email: _auth.currentUser?.email ?? '',
+            isEditing: true,
+          ),
+          refreshOnReturn: true,
+        ),
+      ),
       _MenuItem(
         label: 'Notifications',
         icon: 'notifications',
-        onTap: () => _toast('Notifications'),
+        onTap: () => _open(const NotificationsSettingsScreen()),
       ),
       _MenuItem(
         label: 'Security',
         icon: 'security',
-        onTap: () => _toast('Security'),
+        onTap: () => _open(const SecuritySettingsScreen()),
       ),
       _MenuItem(
         label: 'Privacy',
         icon: 'privacy',
-        onTap: () => _toast('Privacy'),
+        onTap: () => _open(const PrivacySettingsScreen()),
       ),
-      _MenuItem(label: 'Theme', icon: 'theme', onTap: () => _toast('Theme')),
-      _MenuItem(label: 'Help', icon: 'help', onTap: () => _toast('Help')),
+      _MenuItem(
+        label: 'Theme',
+        icon: 'theme',
+        onTap: () => _open(const ThemeSettingsScreen()),
+      ),
+      _MenuItem(
+        label: 'Help',
+        icon: 'help',
+        onTap: () => _open(const HelpSettingsScreen()),
+      ),
     ];
     if (_isOwner) {
       items.insert(
@@ -130,7 +162,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       textAlign: TextAlign.center,         
       style: GoogleFonts.poppins(
         fontSize: 18,                      
-        color: Colors.white,
+        color: AppColors.onPanel,
       ),
     ),
     backgroundColor: _card,
@@ -165,7 +197,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: AppColors.onPanel,
               ),
             ),
             const SizedBox(height: 24),
@@ -185,7 +217,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.white,
+                color: AppColors.onPanel,
               ),
             ),
             Text(
@@ -203,9 +235,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _toast('No invite code found');
       return;
     }
+    final isLight = ThemeService.instance.isLight;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: _card,
+      backgroundColor: AppColors.cardBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -221,39 +255,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               'Share this QR to invite housemates',
-              style: GoogleFonts.poppins(fontSize: 13, color: _textSec),
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
             ),
             const SizedBox(height: 24),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isLight ? Colors.white : HomiePalette.current.surfaceBg,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: HomiePalette.current.cardBorder),
+                boxShadow: isLight ? [HomiePalette.current.cardShadow] : null,
+              ),
               child: QrImageView(
                 data: _inviteCode,
                 version: QrVersions.auto,
                 size: 200,
                 backgroundColor: Colors.white,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
               ),
             ),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFF1D1D35),
+                gradient: isLight ? HomiePalette.lightHeroGradient : null,
+                color: isLight ? null : const Color(0xFF1D1D35),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: _pink.withOpacity(0.3)),
+                border: isLight
+                    ? null
+                    : Border.all(color: _pink.withValues(alpha: 0.3)),
+                boxShadow: isLight ? AppColors.heroShadow : null,
               ),
               child: Text(
                 _inviteCode,
                 style: GoogleFonts.poppins(
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
-                  color: Colors.white,
+                  color: AppColors.onHero,
                   letterSpacing: 8,
                 ),
               ),
@@ -291,7 +338,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: AppColors.onPanel,
               ),
             ),
             const SizedBox(height: 8),
@@ -313,7 +360,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Expanded(
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.white.withOpacity(0.12)),
+                      side: BorderSide(color: AppColors.onPanelDivider),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -353,7 +400,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Text(
                       'Leave',
                       style: GoogleFonts.poppins(
-                        color: Colors.white,
+                        color: AppColors.onPanel,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -393,7 +440,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: AppColors.onPanel,
               ),
             ),
             const SizedBox(height: 8),
@@ -412,7 +459,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Expanded(
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.white.withOpacity(0.12)),
+                      side: BorderSide(color: AppColors.onPanelDivider),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -450,7 +497,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Text(
                       'Log out',
                       style: GoogleFonts.poppins(
-                        color: Colors.white,
+                        color: AppColors.onPanel,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -468,7 +515,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         width: 40,
         height: 4,
         decoration: BoxDecoration(
-          color: const Color(0xFF2E2E50),
+          color: HomiePalette.current.divider,
           borderRadius: BorderRadius.circular(2),
         ),
       );
@@ -490,11 +537,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: () => Navigator.pop(context),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: SvgPicture.asset(
-                    SettingsTokens.iconAsset('back'),
-                    width: 13,
-                    height: 25,
-                  ),
+                  child: SettingsBackIcon(width: 13, height: 25),
                 ),
               ),
             ),
@@ -510,15 +553,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: TextField(
                       controller: _searchCtrl,
                       style: GoogleFonts.poppins(
-                        color: Colors.white.withOpacity(0.7),
+                        color: AppColors.onPanelSecondary,
                         fontSize: 20,
                       ),
-                      cursorColor: Colors.white,
+                      cursorColor: AppColors.onPanel,
                       decoration: InputDecoration(
                         border: InputBorder.none,
                         hintText: 'Search',
                         hintStyle: GoogleFonts.poppins(
-                          color: Colors.white.withOpacity(0.7),
+                          color: AppColors.onPanelSecondary,
                           fontSize: 20,
                         ),
                         isDense: true,
@@ -532,7 +575,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onTap: () => _searchCtrl.clear(),
                       child: Icon(
                         Icons.close_rounded,
-                        color: Colors.white.withOpacity(0.5),
+                        color: AppColors.onPanelMuted,
                         size: 20,
                       ),
                     ),
@@ -560,8 +603,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         height: 61,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 2),
-          boxShadow: const [SettingsTokens.cardShadow],
+          border: Border.all(color: AppColors.onPanel, width: 2),
+          boxShadow: [SettingsTokens.cardShadow],
         ),
         child: ClipOval(
           child: Image.asset(
@@ -580,7 +623,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: AppColors.onPanel,
               ),
             ),
             Text(
@@ -588,7 +631,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w300,
-                color: Colors.white,
+                color: AppColors.onPanel,
               ),
             ),
           ],
@@ -618,7 +661,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Text(
                     'No results',
                     style: GoogleFonts.poppins(
-                      color: Colors.white38,
+                      color: AppColors.onPanelMuted,
                       fontSize: 14,
                     ),
                   ),
@@ -642,7 +685,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               SettingsMenuRow(
                 iconAssetName: 'add_account',
                 label: 'Add account',
-                onTap: () => _toast('Add account'),
+                onTap: () => _open(AddAccountSettingsScreen(
+                  currentUserId: widget.userId,
+                  currentEmail: _auth.currentUser?.email ?? '',
+                  userName: _userName,
+                  avatarIndex: _avatarIndex,
+                )),
               ),
               SettingsMenuRow(
                 iconAssetName: 'logout',

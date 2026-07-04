@@ -6,8 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../../services/firestore_service.dart';
 import '../../services/sound_service.dart';
+import '../../services/saved_accounts_service.dart';
+import '../../services/theme_service.dart';
+import '../../theme.dart';
+import '../home/home_widgets.dart';
 import 'settings_widgets.dart';
 
 class SettingsSubpageScaffold extends StatelessWidget {
@@ -42,11 +47,7 @@ class SettingsSubpageScaffold extends StatelessWidget {
                 },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: SvgPicture.asset(
-                    SettingsTokens.iconAsset('back'),
-                    width: 13,
-                    height: 25,
-                  ),
+                  child: SettingsBackIcon(width: 13, height: 25),
                 ),
               ),
             ),
@@ -56,7 +57,7 @@ class SettingsSubpageScaffold extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 28,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: AppColors.textPrimary,
               ),
             ),
             if (subtitle != null) ...[
@@ -65,7 +66,7 @@ class SettingsSubpageScaffold extends StatelessWidget {
                 subtitle!,
                 style: GoogleFonts.poppins(
                   fontSize: 14,
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: AppColors.textSecondary,
                   height: 1.4,
                 ),
               ),
@@ -94,7 +95,7 @@ class SettingsSectionLabel extends StatelessWidget {
         style: GoogleFonts.poppins(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: const Color(0xFF555577),
+          color: AppColors.textMuted,
           letterSpacing: 1.2,
         ),
       ),
@@ -133,7 +134,7 @@ class SettingsToggleRow extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: AppColors.onPanel,
                     ),
                   ),
                   if (subtitle != null) ...[
@@ -142,7 +143,7 @@ class SettingsToggleRow extends StatelessWidget {
                       subtitle!,
                       style: GoogleFonts.poppins(
                         fontSize: 13,
-                        color: Colors.white.withValues(alpha: 0.55),
+                        color: AppColors.onPanelSecondary,
                         height: 1.35,
                       ),
                     ),
@@ -202,7 +203,7 @@ class SettingsActionRow extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        color: AppColors.onPanel,
                       ),
                     ),
                     if (subtitle != null) ...[
@@ -211,7 +212,7 @@ class SettingsActionRow extends StatelessWidget {
                         subtitle!,
                         style: GoogleFonts.poppins(
                           fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.55),
+                          color: AppColors.onPanelSecondary,
                         ),
                       ),
                     ],
@@ -223,13 +224,13 @@ class SettingsActionRow extends StatelessWidget {
                   trailing!,
                   style: GoogleFonts.poppins(
                     fontSize: 14,
-                    color: Colors.white.withValues(alpha: 0.7),
+                    color: AppColors.onPanelSecondary,
                   ),
                 ),
               const SizedBox(width: 8),
               Icon(
                 Icons.chevron_right_rounded,
-                color: Colors.white.withValues(alpha: 0.4),
+                color: AppColors.onPanelMuted,
                 size: 22,
               ),
             ],
@@ -271,7 +272,7 @@ class SettingsChoiceRow extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: AppColors.onPanel,
                   ),
                 ),
               ),
@@ -284,7 +285,7 @@ class SettingsChoiceRow extends StatelessWidget {
                   border: Border.all(
                     color: selected
                         ? const Color(0xFFE040FB)
-                        : Colors.white.withValues(alpha: 0.35),
+                        : AppColors.onPanelMuted,
                     width: 2,
                   ),
                   color: selected
@@ -292,7 +293,7 @@ class SettingsChoiceRow extends StatelessWidget {
                       : Colors.transparent,
                 ),
                 child: selected
-                    ? const Icon(Icons.check, color: Colors.white, size: 14)
+                    ? Icon(Icons.check, color: AppColors.onPanel, size: 14)
                     : null,
               ),
             ],
@@ -386,14 +387,14 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('🔐', style: TextStyle(fontSize: 40)),
+            Text('🔐', style: TextStyle(fontSize: 40)),
             const SizedBox(height: 12),
             Text(
               'Password reset',
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: AppColors.onPanel,
               ),
             ),
             const SizedBox(height: 8),
@@ -430,7 +431,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                         content: Text(
                           'Reset link sent',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(color: Colors.white),
+                          style: GoogleFonts.poppins(color: AppColors.onPanel),
                         ),
                         backgroundColor: const Color(0xFF1A1A2E),
                         behavior: SnackBarBehavior.floating,
@@ -444,7 +445,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                   'Send link',
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: AppColors.onPanel,
                   ),
                 ),
               ),
@@ -535,7 +536,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                 content: Text(
                   'We\'ll email you when your export is ready',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(color: Colors.white),
+                  style: GoogleFonts.poppins(color: AppColors.onPanel),
                 ),
                 backgroundColor: const Color(0xFF1A1A2E),
                 behavior: SnackBarBehavior.floating,
@@ -553,8 +554,6 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
 
 
 
-enum _AppTheme { dark, light, system }
-
 class ThemeSettingsScreen extends StatefulWidget {
   const ThemeSettingsScreen({super.key});
 
@@ -563,7 +562,25 @@ class ThemeSettingsScreen extends StatefulWidget {
 }
 
 class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
-  _AppTheme _selected = _AppTheme.dark;
+  @override
+  void initState() {
+    super.initState();
+    ThemeService.instance.addListener(_onThemeChanged);
+  }
+
+  @override
+  void dispose() {
+    ThemeService.instance.removeListener(_onThemeChanged);
+    super.dispose();
+  }
+
+  void _onThemeChanged() => setState(() {});
+
+  HomieThemePreference get _selected => ThemeService.instance.preference;
+
+  Future<void> _select(HomieThemePreference value) async {
+    await ThemeService.instance.setPreference(value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -573,50 +590,18 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
       children: [
         SettingsChoiceRow(
           label: 'Dark',
-          selected: _selected == _AppTheme.dark,
-          onTap: () => setState(() => _selected = _AppTheme.dark),
+          selected: _selected == HomieThemePreference.dark,
+          onTap: () => _select(HomieThemePreference.dark),
         ),
         SettingsChoiceRow(
           label: 'Light',
-          selected: _selected == _AppTheme.light,
-          onTap: () {
-            setState(() => _selected = _AppTheme.light);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Light theme coming soon',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(color: Colors.white),
-                ),
-                backgroundColor: const Color(0xFF1A1A2E),
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-            );
-          },
+          selected: _selected == HomieThemePreference.light,
+          onTap: () => _select(HomieThemePreference.light),
         ),
         SettingsChoiceRow(
           label: 'Match system',
-          selected: _selected == _AppTheme.system,
-          onTap: () {
-            setState(() => _selected = _AppTheme.system);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'System theme coming soon',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(color: Colors.white),
-                ),
-                backgroundColor: const Color(0xFF1A1A2E),
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-            );
-          },
+          selected: _selected == HomieThemePreference.system,
+          onTap: () => _select(HomieThemePreference.system),
         ),
       ],
     );
@@ -635,6 +620,11 @@ class HelpSettingsScreen extends StatefulWidget {
 class _HelpSettingsScreenState extends State<HelpSettingsScreen> {
   String? _expanded;
 
+  static const _housemateFaqTitle = 'How to be a good housemate?';
+  static const _youtubeVideoId = 'JNI1fWTlGwY';
+
+  late final YoutubePlayerController _youtubeController;
+
   static const _faqs = [
     (
       'How do I invite housemates?',
@@ -651,23 +641,107 @@ class _HelpSettingsScreenState extends State<HelpSettingsScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _youtubeController = YoutubePlayerController.fromVideoId(
+      videoId: _youtubeVideoId,
+      autoPlay: false,
+      params: const YoutubePlayerParams(
+        mute: false,
+        enableCaption: true,
+        showFullscreenButton: true,
+        strictRelatedVideos: true,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _youtubeController.close();
+    super.dispose();
+  }
+
+  void _toggleFaq(String title) {
+    SoundService.instance.playPop();
+    final opening = _expanded != title;
+    setState(() => _expanded = opening ? title : null);
+    if (!opening || title != _housemateFaqTitle) {
+      _youtubeController.pauseVideo();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final housemateOpen = _expanded == _housemateFaqTitle;
+
     return SettingsSubpageScaffold(
       title: 'Help',
       subtitle: 'Quick answers and ways to reach us.',
       children: [
         const SettingsSectionLabel(label: 'FAQ'),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: SettingsGradientPanel(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => _toggleFaq(_housemateFaqTitle),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _housemateFaqTitle,
+                          style: GoogleFonts.poppins(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.onPanel,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        housemateOpen
+                            ? Icons.keyboard_arrow_up_rounded
+                            : Icons.keyboard_arrow_down_rounded,
+                        color: AppColors.onPanelMuted,
+                      ),
+                    ],
+                  ),
+                ),
+                if (housemateOpen) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'A short guide to living well with the people you share a home with.',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: AppColors.onPanel.withValues(alpha: 0.6),
+                      height: 1.45,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: YoutubePlayer(
+                      controller: _youtubeController,
+                      backgroundColor: Colors.black,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
         ..._faqs.map((faq) {
           final open = _expanded == faq.$1;
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: GestureDetector(
-              onTap: () {
-                SoundService.instance.playPop();
-                setState(() => _expanded = open ? null : faq.$1);
-              },
+              onTap: () => _toggleFaq(faq.$1),
               child: SettingsGradientPanel(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -679,7 +753,7 @@ class _HelpSettingsScreenState extends State<HelpSettingsScreen> {
                             style: GoogleFonts.poppins(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: Colors.white,
+                              color: AppColors.onPanel,
                             ),
                           ),
                         ),
@@ -687,7 +761,7 @@ class _HelpSettingsScreenState extends State<HelpSettingsScreen> {
                           open
                               ? Icons.keyboard_arrow_up_rounded
                               : Icons.keyboard_arrow_down_rounded,
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: AppColors.onPanelMuted,
                         ),
                       ],
                     ),
@@ -697,7 +771,7 @@ class _HelpSettingsScreenState extends State<HelpSettingsScreen> {
                         faq.$2,
                         style: GoogleFonts.poppins(
                           fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.6),
+                          color: AppColors.onPanel.withValues(alpha: 0.6),
                           height: 1.45,
                         ),
                       ),
@@ -726,44 +800,283 @@ class _HelpSettingsScreenState extends State<HelpSettingsScreen> {
 
 
 
-class AddAccountSettingsScreen extends StatelessWidget {
-  const AddAccountSettingsScreen({super.key});
+class AddAccountSettingsScreen extends StatefulWidget {
+  final String currentUserId;
+  final String currentEmail;
+  final String userName;
+  final int avatarIndex;
+
+  const AddAccountSettingsScreen({
+    super.key,
+    required this.currentUserId,
+    required this.currentEmail,
+    required this.userName,
+    required this.avatarIndex,
+  });
+
+  @override
+  State<AddAccountSettingsScreen> createState() => _AddAccountSettingsScreenState();
+}
+
+class _AddAccountSettingsScreenState extends State<AddAccountSettingsScreen> {
+  final _auth = FirebaseAuth.instance;
+  List<SavedAccount> _accounts = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    await SavedAccountsService.instance.saveAccount(
+      SavedAccount(
+        uid: widget.currentUserId,
+        email: widget.currentEmail,
+        name: widget.userName,
+        avatarIndex: widget.avatarIndex,
+      ),
+    );
+    final accounts = await SavedAccountsService.instance.loadAccounts();
+    if (mounted) {
+      setState(() {
+        _accounts = accounts;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _signOutForSwitch({String? prefilledEmail}) async {
+    if (prefilledEmail != null) {
+      await SavedAccountsService.instance.setPendingSwitchEmail(prefilledEmail);
+    }
+    await _auth.signOut();
+  }
+
+  void _confirmAddAccount() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Add another account?',
+          style: GoogleFonts.poppins(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: AppColors.onPanel,
+          ),
+        ),
+        content: Text(
+          'You\'ll be signed out so you can log in with a different email.',
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            color: AppColors.onPanel.withValues(alpha: 0.6),
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: GoogleFonts.poppins(color: AppColors.onPanelMuted)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              SoundService.instance.playPop();
+              await _signOutForSwitch();
+            },
+            child: Text(
+              'Continue',
+              style: GoogleFonts.poppins(
+                color: const Color(0xFFE040FB),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmSwitchAccount(SavedAccount account) {
+    if (account.uid == widget.currentUserId) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Switch to ${account.name}?',
+          style: GoogleFonts.poppins(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: AppColors.onPanel,
+          ),
+        ),
+        content: Text(
+          'You\'ll be signed out and asked to sign in as ${account.email}.',
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            color: AppColors.onPanel.withValues(alpha: 0.6),
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: GoogleFonts.poppins(color: AppColors.onPanelMuted)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              SoundService.instance.playPop();
+              await _signOutForSwitch(prefilledEmail: account.email);
+            },
+            child: Text(
+              'Switch',
+              style: GoogleFonts.poppins(
+                color: const Color(0xFFE040FB),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return SettingsSubpageScaffold(
       title: 'Add account',
-      subtitle: 'Switch between households or sign in with another email.',
+      subtitle: 'Switch between accounts or sign in with another email.',
       children: [
-        SettingsGradientPanel(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              const Icon(Icons.switch_account_rounded,
-                  color: Color(0xFFE040FB), size: 48),
-              const SizedBox(height: 16),
-              Text(
-                'Multi-account support is on the way',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
+        if (_loading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: CircularProgressIndicator(color: Color(0xFFE040FB)),
+            ),
+          )
+        else ...[
+          const SettingsSectionLabel(label: 'Saved accounts'),
+          ..._accounts.map((account) {
+            final isActive = account.uid == widget.currentUserId;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: GestureDetector(
+                onTap: isActive
+                    ? null
+                    : () {
+                        SoundService.instance.playPop();
+                        _confirmSwitchAccount(account);
+                      },
+                child: SettingsGradientPanel(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  child: Row(
+                    children: [
+                      HomeCatAvatar(
+                        avatarIndex: account.avatarIndex,
+                        size: 44,
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              account.name.isNotEmpty ? account.name : 'Account',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.onPanel,
+                              ),
+                            ),
+                            Text(
+                              account.email,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: AppColors.onPanelSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (isActive)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE040FB).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'Active',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFFE040FB),
+                            ),
+                          ),
+                        )
+                      else
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: AppColors.onPanelMuted,
+                        ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'For now, log out and sign in with a different email to join another house.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  color: Colors.white.withValues(alpha: 0.55),
-                  height: 1.45,
-                ),
+            );
+          }),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () {
+              SoundService.instance.playPop();
+              _confirmAddAccount();
+            },
+            child: SettingsGradientPanel(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.onPanelDivider,
+                    ),
+                    child: const Icon(
+                      Icons.add_rounded,
+                      color: Color(0xFFE040FB),
+                      size: 26,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      'Add another account',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.onPanel,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -821,7 +1134,7 @@ class _HouseSettingsScreenState extends State<HouseSettingsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg,
           textAlign: TextAlign.center,
-          style: GoogleFonts.poppins(color: Colors.white)),
+          style: GoogleFonts.poppins(color: AppColors.onPanel)),
       backgroundColor: error ? Colors.redAccent : _card,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -865,14 +1178,14 @@ class _HouseSettingsScreenState extends State<HouseSettingsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('👋', style: TextStyle(fontSize: 36)),
+            Text('👋', style: TextStyle(fontSize: 36)),
             const SizedBox(height: 12),
             Text(
               'Remove $name?',
               style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white),
+                  color: AppColors.onPanel),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
@@ -888,7 +1201,7 @@ class _HouseSettingsScreenState extends State<HouseSettingsScreen> {
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.12)),
+                        color: AppColors.onPanelDivider),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
                     padding:
@@ -919,7 +1232,7 @@ class _HouseSettingsScreenState extends State<HouseSettingsScreen> {
                   },
                   child: Text('Remove',
                       style: GoogleFonts.poppins(
-                          color: Colors.white,
+                          color: AppColors.onPanel,
                           fontWeight: FontWeight.w600)),
                 ),
               ),
@@ -974,11 +1287,7 @@ class _HouseSettingsScreenState extends State<HouseSettingsScreen> {
                     child: Padding(
                       padding:
                           const EdgeInsets.symmetric(vertical: 8),
-                      child: SvgPicture.asset(
-                        SettingsTokens.iconAsset('back'),
-                        width: 13,
-                        height: 25,
-                      ),
+                      child: SettingsBackIcon(width: 13, height: 25),
                     ),
                   ),
                 ),
@@ -988,14 +1297,14 @@ class _HouseSettingsScreenState extends State<HouseSettingsScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: AppColors.onPanel,
                   ),
                 ),
                 Text(
                   'Only visible to you as the owner.',
                   style: GoogleFonts.poppins(
                       fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.45)),
+                      color: AppColors.onPanel.withValues(alpha: 0.45)),
                 ),
                 const SizedBox(height: 28),
 
@@ -1012,12 +1321,12 @@ class _HouseSettingsScreenState extends State<HouseSettingsScreen> {
                           onTap: () =>
                               setState(() => _editingName = true),
                           style: GoogleFonts.poppins(
-                              color: Colors.white, fontSize: 16),
+                              color: AppColors.onPanel, fontSize: 16),
                           decoration: InputDecoration(
                             border: InputBorder.none,
                             hintText: 'House name…',
                             hintStyle: GoogleFonts.poppins(
-                                color: Colors.white38, fontSize: 16),
+                                color: AppColors.onPanelMuted, fontSize: 16),
                             isDense: true,
                             contentPadding:
                                 const EdgeInsets.symmetric(
@@ -1051,7 +1360,7 @@ class _HouseSettingsScreenState extends State<HouseSettingsScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 24,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            color: AppColors.onPanel,
                             letterSpacing: 6,
                           ),
                         ),
@@ -1081,7 +1390,7 @@ class _HouseSettingsScreenState extends State<HouseSettingsScreen> {
                     'Regenerating the code invalidates the old one.',
                     style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: Colors.white.withValues(alpha: 0.4)),
+                        color: AppColors.onPanelMuted),
                   ),
                 ),
 
@@ -1222,7 +1531,7 @@ class _PendingRow extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  color: AppColors.onPanel,
                 ),
               ),
             ),
@@ -1325,7 +1634,7 @@ class _MemberRow extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: AppColors.onPanel,
                     ),
                   ),
                   if (isOwner)

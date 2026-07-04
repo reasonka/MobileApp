@@ -112,7 +112,7 @@ class _NewChoreSheetState extends State<NewChoreSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: AppColors.onPanelMuted,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -123,7 +123,7 @@ class _NewChoreSheetState extends State<NewChoreSheet> {
             style: GoogleFonts.poppins(
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: AppColors.onPanel,
             ),
           ),
           Text(
@@ -180,7 +180,7 @@ class _NewChoreSheetState extends State<NewChoreSheet> {
                       border: Border.all(
                         color: selected
                             ? Colors.transparent
-                            : Colors.white.withOpacity(0.12),
+                            : AppColors.onPanelDivider,
                       ),
                     ),
                     child: Text(
@@ -188,7 +188,7 @@ class _NewChoreSheetState extends State<NewChoreSheet> {
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                        color: Colors.white,
+                        color: AppColors.onPanel,
                       ),
                     ),
                   ),
@@ -224,7 +224,7 @@ class _NewChoreSheetState extends State<NewChoreSheet> {
             max: 20,
             divisions: 19,
             activeColor: AppColors.pink,
-            inactiveColor: Colors.white12,
+            inactiveColor: AppColors.onPanelDivider,
             label: '$_proposedXP XP',
             onChanged: (v) => setState(() => _proposedXP = v.round()),
           ),
@@ -263,13 +263,13 @@ class _NewChoreSheetState extends State<NewChoreSheet> {
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
+                            strokeWidth: 2, color: AppColors.onAccent))
                     : Text(
                         'Create Chore',
                         style: GoogleFonts.poppins(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: Colors.white),
+                            color: AppColors.onAccent),
                       ),
               ),
             ),
@@ -300,14 +300,14 @@ class _GradientField extends StatelessWidget {
       ),
       child: TextField(
         controller: controller,
-        style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+        style: GoogleFonts.poppins(color: AppColors.onPanel, fontSize: 14),
         decoration: InputDecoration(
           border: InputBorder.none,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
           labelText: label,
           labelStyle:
-              GoogleFonts.poppins(color: Colors.white70, fontSize: 14),
+              GoogleFonts.poppins(color: AppColors.onPanelSecondary, fontSize: 14),
           floatingLabelBehavior: FloatingLabelBehavior.never,
         ),
       ),

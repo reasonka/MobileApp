@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../services/theme_service.dart';
 import '../../theme.dart';
 
 
 class LoginTokens {
-  static const screenBg = Color(0xFF161823);
+  static Color get screenBg => HomiePalette.current.screenBg;
   static const horizontalPadding = 41.0;
   static const fieldHeight = 59.0;
   static const fieldRadius = 20.0;
@@ -15,26 +16,16 @@ class LoginTokens {
   static const logoHeight = 104.0;
   static const logoRadius = 41.0;
 
-  static const fieldGradient = RadialGradient(
-    center: Alignment(0.86, 0.62),
-    radius: 1.6,
-    colors: [
-      Color(0x80AF69F1),
-      Color(0x80DA70D7),
-      Color(0x80AE67BC),
-      Color(0x80815EA0),
-      Color(0x80555485),
-      Color(0x803E5077),
-      Color(0x80284B69),
-    ],
-    stops: [0.0, 0.47, 0.60, 0.73, 0.87, 0.93, 1.0],
-  );
+  static RadialGradient get fieldGradient =>
+      HomiePalette.current.fieldGradient;
 
-  static const fieldShadow = BoxShadow(
-    color: Color(0x40000000),
-    offset: Offset(0, 4),
-    blurRadius: 4,
-  );
+  static BoxShadow get fieldShadow => HomiePalette.current.cardShadow;
+
+  static Color get fieldTextColor =>
+      ThemeService.instance.isLight ? AppColors.textPrimary : Colors.white;
+
+  static Color get fieldHintColor =>
+      ThemeService.instance.isLight ? AppColors.textSecondary : Colors.white;
 }
 
 
@@ -43,18 +34,28 @@ class LoginScreenBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = HomiePalette.current;
     return ColoredBox(
       color: LoginTokens.screenBg,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Positioned.fill(
-            child: SvgPicture.asset(
-              'assets/images/login/login_bg.svg',
-              fit: BoxFit.cover,
-              alignment: Alignment.center,
+          if (palette.useDarkTopPanelImage)
+            Positioned.fill(
+              child: SvgPicture.asset(
+                'assets/images/login/login_bg.svg',
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+              ),
+            )
+          else
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: palette.topBarGradient,
+                ),
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -93,7 +94,7 @@ class LoginScreenTitle extends StatelessWidget {
       style: GoogleFonts.poppins(
         fontSize: 20,
         fontWeight: FontWeight.w800,
-        color: Colors.white,
+        color: AppColors.textPrimary,
         height: 22 / 20,
       ),
     );
@@ -134,7 +135,7 @@ class LoginGradientField extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LoginTokens.fieldGradient,
         borderRadius: BorderRadius.circular(LoginTokens.fieldRadius),
-        boxShadow: const [LoginTokens.fieldShadow],
+        boxShadow: [LoginTokens.fieldShadow],
       ),
       child: TextField(
         controller: controller,
@@ -153,7 +154,7 @@ class LoginGradientField extends StatelessWidget {
                   ]
                 : null),
         style: GoogleFonts.openSans(
-          color: Colors.white,
+          color: LoginTokens.fieldTextColor,
           fontSize: 16,
           fontWeight: FontWeight.w600,
           letterSpacing: allCaps ? 3.0 : 0.0,
@@ -167,7 +168,7 @@ class LoginGradientField extends StatelessWidget {
           ),
           hintText: label,
           hintStyle: GoogleFonts.openSans(
-            color: Colors.white,
+            color: LoginTokens.fieldHintColor,
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -205,7 +206,7 @@ class LoginGradientFieldShell extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LoginTokens.fieldGradient,
           borderRadius: BorderRadius.circular(LoginTokens.fieldRadius),
-          boxShadow: const [LoginTokens.fieldShadow],
+          boxShadow: [LoginTokens.fieldShadow],
         ),
         child: Row(
           children: [
@@ -213,7 +214,7 @@ class LoginGradientFieldShell extends StatelessWidget {
               child: Text(
                 label,
                 style: GoogleFonts.openSans(
-                  color: isPlaceholder ? Colors.white : Colors.white,
+                  color: LoginTokens.fieldTextColor,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -283,7 +284,7 @@ class LoginPrimaryButton extends StatelessWidget {
             end: Alignment.centerRight,
           ),
           borderRadius: BorderRadius.circular(LoginTokens.fieldRadius),
-          boxShadow: const [LoginTokens.fieldShadow],
+          boxShadow: [LoginTokens.fieldShadow],
         ),
         child: ElevatedButton(
           onPressed: loading ? null : onPressed,
@@ -300,7 +301,7 @@ class LoginPrimaryButton extends StatelessWidget {
                   height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    color: Colors.white,
+                    color: AppColors.onAccent,
                   ),
                 )
               : Text(
@@ -308,7 +309,7 @@ class LoginPrimaryButton extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: AppColors.onAccent,
                   ),
                 ),
         ),
@@ -358,7 +359,7 @@ class LoginSocialAuthRow extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 17,
             fontWeight: FontWeight.w600,
-            color: Colors.white.withOpacity(0.5),
+            color: AppColors.textMuted,
             height: 22 / 17,
           ),
         ),

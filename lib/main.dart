@@ -25,6 +25,7 @@ import 'services/inbox_listener.dart';
 import 'screens/home/home_widgets.dart';
 import 'screens/settings/settings_screen.dart';
 import 'screens/profile_screen.dart';
+import 'services/theme_service.dart';
 import 'theme.dart';
 
 
@@ -41,35 +42,48 @@ void main() async {
   await SoundService.instance.preload();
   await NotificationService.instance.init();
   await NotificationService.instance.requestPermissions();
+  await ThemeService.instance.init();
 
   InboxListener.instance.start(FirebaseAuth.instance.currentUser?.uid ?? '');
 
   runApp(const HomieApp());
 }
 
-class HomieApp extends StatelessWidget {
+class HomieApp extends StatefulWidget {
   const HomieApp({super.key});
+
+  @override
+  State<HomieApp> createState() => _HomieAppState();
+}
+
+class _HomieAppState extends State<HomieApp> {
+  @override
+  void initState() {
+    super.initState();
+    ThemeService.instance.addListener(_onThemeChanged);
+  }
+
+  @override
+  void dispose() {
+    ThemeService.instance.removeListener(_onThemeChanged);
+    super.dispose();
+  }
+
+  void _onThemeChanged() => setState(() {});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Homie',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0D0D1A),
-        fontFamily: GoogleFonts.poppins().fontFamily,
-        colorScheme: const ColorScheme.dark(
-          primary:   Color(0xFFE040FB),
-          secondary: Color(0xFF00C9A7),
-          surface:   Color(0xFF1A1A2E),
-        ),
-      ),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeService.instance.materialThemeMode,
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, authSnap) {
           if (authSnap.connectionState == ConnectionState.waiting) {
-            return _loadingScaffold;
+            return _loadingScaffold();
           }
 
           final user = authSnap.data;
@@ -82,7 +96,7 @@ class HomieApp extends StatelessWidget {
                 .snapshots(),
             builder: (context, userSnap) {
               if (userSnap.connectionState == ConnectionState.waiting) {
-                return _loadingScaffold;
+                return _loadingScaffold();
               }
 
               final data = userSnap.data?.data();
@@ -121,18 +135,16 @@ class HomieApp extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-// PALETTE
-// ─────────────────────────────────────────────
+Widget _loadingScaffold() {
+  return Scaffold(
+    backgroundColor: HomiePalette.current.scaffoldBg,
+    body: const Center(
+      child: CircularProgressIndicator(color: Color(0xFFE040FB)),
+    ),
+  );
+}
 
-const _loadingScaffold = Scaffold(
-  backgroundColor: Color(0xFF0D0D1A),
-  body: Center(
-    child: CircularProgressIndicator(color: Color(0xFFE040FB)),
-  ),
-);
-
-const Color _bg = Color(0xFF0D0D1A);
+Color get _bg => HomiePalette.current.scaffoldBg;
 
 // ─────────────────────────────────────────────
 // NAV ITEMS
@@ -386,6 +398,7 @@ class _BeltNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = HomiePalette.current;
     final double screenWidth = MediaQuery.of(context).size.width;
     final double barWidth = screenWidth - (_horizontalMargin * 2);
     final double slotW = barWidth / _navItems.length;
@@ -401,7 +414,9 @@ class _BeltNavBar extends StatelessWidget {
             borderRadius: BorderRadius.circular(_barRadius),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
+                color: ThemeService.instance.isLight
+                    ? const Color(0x266B6578)
+                    : Colors.black.withValues(alpha: 0.4),
                 blurRadius: 24,
                 offset: const Offset(0, 8),
               ),
@@ -414,19 +429,21 @@ class _BeltNavBar extends StatelessWidget {
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(_barRadius),
-                  color: const Color(0xFF161823).withValues(alpha: 0.42),
-                  gradient: RadialGradient(
-                    center: Alignment.center,
-                    radius: 1.1,
-                    colors: const [
-                      Color(0x33E3F6FF),
-                      Color(0x1AD7D7D7),
-                      Color(0x33161823),
-                    ],
-                    stops: const [0.0, 0.55, 1.0],
-                  ),
+                  color: palette.navBarFill,
+                  gradient: ThemeService.instance.isLight
+                      ? null
+                      : RadialGradient(
+                          center: Alignment.center,
+                          radius: 1.1,
+                          colors: const [
+                            Color(0x33E3F6FF),
+                            Color(0x1AD7D7D7),
+                            Color(0x33161823),
+                          ],
+                          stops: const [0.0, 0.55, 1.0],
+                        ),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.16),
+                    color: palette.navBarBorder,
                     width: 1,
                   ),
                 ),
@@ -441,10 +458,10 @@ class _BeltNavBar extends StatelessWidget {
                         width: slotW * 0.78,
                         height: 58,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE040FB).withValues(alpha: 0.18),
+                          color: palette.navActivePill,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: const Color(0xFFE040FB).withValues(alpha: 0.35),
+                            color: palette.navActivePillBorder,
                             width: 1,
                           ),
                         ),
@@ -492,6 +509,15 @@ class _Slot extends StatelessWidget {
     final w = active ? item.activeW : item.inactiveW;
     final h = active ? item.activeH : item.inactiveH;
 
+    // Nav SVGs are pale pink — fine on dark glass, invisible on white.
+    // In light mode, tint inactive icons purple-grey and active icons hot pink.
+    final ColorFilter? tint = ThemeService.instance.isLight
+        ? ColorFilter.mode(
+            active ? const Color(0xFFC218A8) : HomiePalette.light.textSecondary,
+            BlendMode.srcIn,
+          )
+        : null;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOutBack,
@@ -502,6 +528,7 @@ class _Slot extends StatelessWidget {
         width: w,
         height: h,
         fit: BoxFit.contain,
+        colorFilter: tint,
       ),
     );
   }
@@ -572,21 +599,29 @@ class _GlobalTopBarState extends State<_GlobalTopBar> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = HomiePalette.current;
     final double statusH = MediaQuery.of(context).padding.top;
 
     return Container(
       height: statusH + kGlobalTopBarHeight,
-      // Solid background so scrolling content from screens never shows through.
-      color: HomeTokens.screenBg,
+      color: palette.topBarBg,
       child: Stack(
         children: [
-          // Background panel image (same as HouseAppBar)
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/TopPanel.png',
-              fit: BoxFit.fill,
+          if (palette.useDarkTopPanelImage)
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/TopPanel.png',
+                fit: BoxFit.fill,
+              ),
+            )
+          else
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: palette.topBarGradient,
+                ),
+              ),
             ),
-          ),
           // Content row, placed below the status bar
           Positioned(
             left: 0, right: 0,

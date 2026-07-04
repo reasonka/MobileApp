@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import '../models/event_model.dart';
 import '../services/firestore_service.dart';
 import '../services/notification_service.dart';
+import '../services/theme_service.dart';
+import '../theme.dart';
 import 'edit_event_sheet.dart';
 import '../services/sound_service.dart';
 
@@ -22,33 +24,48 @@ class EventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final eventDate = DateTime(event.date.year, event.date.month, event.date.day);
+    final eventDate =
+        DateTime(event.date.year, event.date.month, event.date.day);
     // Birthday events recur yearly and are never marked "done".
     final isDone = !event.isBirthday && eventDate.isBefore(today);
+    final isLight = ThemeService.instance.isLight;
+    final p = HomiePalette.current;
 
-    final String formattedDate = event.isBirthday
-        ? DateFormat('dd/MM').format(event.date) // shows month/day, recurs yearly
-        : DateFormat('dd/MM').format(event.date);
+    final String formattedDate = DateFormat('dd/MM').format(event.date);
     final firestoreService = FirestoreService();
+
+    final Color titleColor = isDone
+        ? p.textMuted
+        : (isLight ? p.textPrimary : Colors.white);
+    final Color metaColor = isDone
+        ? p.textMuted.withValues(alpha: 0.7)
+        : (isLight ? p.textSecondary : Colors.white60);
+    final Color iconBtnColor =
+        isLight ? p.textSecondary : Colors.white60;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12.0),
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage('assets/images/calendar/EventPanel.png'),
-          fit: BoxFit.fill,
-        ),
+      decoration: BoxDecoration(
+        color: isLight ? p.surfaceBg : null,
+        borderRadius: BorderRadius.circular(isLight ? 16 : 0),
+        border: isLight ? Border.all(color: p.cardBorder) : null,
+        image: isLight
+            ? null
+            : const DecorationImage(
+                image: AssetImage('assets/images/calendar/EventPanel.png'),
+                fit: BoxFit.fill,
+              ),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 20,
             backgroundColor: event.isBirthday
-                ? const Color(0xFFFFC107).withOpacity(0.2)
+                ? const Color(0xFFFFC107).withValues(alpha: 0.2)
                 : isDone
-                    ? Colors.grey.withOpacity(0.2)
-                    : const Color(0xFFE040FB).withOpacity(0.2),
+                    ? Colors.grey.withValues(alpha: 0.2)
+                    : const Color(0xFFE040FB).withValues(alpha: 0.2),
             child: Icon(
               event.isBirthday
                   ? Icons.cake
@@ -69,7 +86,7 @@ class EventCard extends StatelessWidget {
                 Text(
                   isDone ? "$formattedDate (Done)" : formattedDate,
                   style: TextStyle(
-                    color: isDone ? Colors.white38 : Colors.white60,
+                    color: metaColor,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                     decoration: isDone ? TextDecoration.lineThrough : null,
@@ -79,7 +96,7 @@ class EventCard extends StatelessWidget {
                 Text(
                   event.title,
                   style: TextStyle(
-                    color: isDone ? Colors.white54 : Colors.white,
+                    color: titleColor,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     decoration: isDone ? TextDecoration.lineThrough : null,
@@ -91,12 +108,12 @@ class EventCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.notifications_active,
-                          size: 12, color: Colors.white.withOpacity(0.5)),
+                          size: 12, color: metaColor),
                       const SizedBox(width: 4),
                       Text(
                         DateFormat('dd/MM HH:mm').format(event.reminderAt!),
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
+                          color: metaColor,
                           fontSize: 11,
                         ),
                       ),
@@ -110,14 +127,15 @@ class EventCard extends StatelessWidget {
           // Birthday events are locked: no edit, no delete.
           if (!isDone && !event.isBirthday) ...[
             IconButton(
-              icon: const Icon(Icons.edit, color: Colors.white60, size: 20),
+              icon: Icon(Icons.edit, color: iconBtnColor, size: 20),
               onPressed: () {
                 SoundService.instance.playPop();
                 EditEventSheet.show(context, event, houseId, currentUserId);
               },
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+              icon: const Icon(Icons.delete_outline,
+                  color: Colors.redAccent, size: 20),
               onPressed: () async {
                 SoundService.instance.playDelete();
                 await NotificationService.instance.cancelReminder(event.eventId);
