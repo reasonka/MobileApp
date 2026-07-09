@@ -254,7 +254,10 @@ class HomeStickyNotesBanner extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () {
+              SoundService.instance.playUndo();
+              Navigator.pop(ctx);
+            },
             child: Text(
               'Cancel',
               style: GoogleFonts.poppins(color: AppColors.onPanelMuted),
@@ -265,6 +268,7 @@ class HomeStickyNotesBanner extends StatelessWidget {
               Navigator.pop(ctx);
               SoundService.instance.playDelete();
               await onDeleteNote(note.noteId);
+            
             },
             child: Text(
               'Delete',
@@ -767,10 +771,13 @@ class HomeHousemateInvitePlaceholder extends StatelessWidget {
 
   static const double cardHeight = 138;
 
-  @override
+ @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        SoundService.instance.playPop();
+        onTap();
+      },
       child: Container(
         height: cardHeight,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),

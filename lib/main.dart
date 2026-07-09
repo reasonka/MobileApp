@@ -34,17 +34,26 @@ import 'theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    // options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
+  await Firebase.initializeApp();
+  print('✅ Firebase done');
+
+  await SoundService.instance.init();
+  print('✅ Sound init done');
 
   await SoundService.instance.preload();
+  print('✅ Sound preload done');
+
   await NotificationService.instance.init();
+  print('✅ Notification init done');
+
   await NotificationService.instance.requestPermissions();
+  print('✅ Notification permissions done');
+
   await ThemeService.instance.init();
+  print('✅ Theme init done');
 
   InboxListener.instance.start(FirebaseAuth.instance.currentUser?.uid ?? '');
+  print('✅ Inbox listener started');
 
   runApp(const HomieApp());
 }
@@ -123,10 +132,12 @@ class _HomieAppState extends State<HomieApp> {
                 );
               }
 
-              return RootNavigation(
-                userId: user.uid,
-                houseId: data['houseId'] as String,
-              );
+                        return RootNavigation(
+            key: const ValueKey('root_navigation'), // 👈 add this
+            userId: user.uid,
+            houseId: data['houseId'] as String,
+          );
+              
             },
           );
         },
@@ -248,6 +259,10 @@ class _RootNavigationState extends State<RootNavigation>
       houseId: widget.houseId,
     );
     InboxListener.instance.start(widget.userId);
+
+    // BGM starts as soon as the user reaches the main app shell
+    // (home/bills/calendar/map) — never plays on login/signup/setup screens.
+    SoundService.instance.playBgm();
   }
 
   @override
@@ -256,7 +271,8 @@ class _RootNavigationState extends State<RootNavigation>
       c.dispose();
     }
     LocationService.instance.stop();
-    InboxListener.instance.stop(); 
+    InboxListener.instance.stop();
+    SoundService.instance.stopBgm();
     super.dispose();
   }
 

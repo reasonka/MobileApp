@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/firestore_service.dart';
 import '../../theme.dart';
+import '../../services/sound_service.dart';
 
 class NewNoteSheet extends StatefulWidget {
   final String userId;
@@ -127,7 +128,12 @@ class _NewNoteSheetState extends State<NewNoteSheet> {
                 borderRadius: BorderRadius.circular(14),
               ),
               child: ElevatedButton(
-                onPressed: _loading ? null : _submit,
+                onPressed: _loading
+                    ? null
+                    : () {
+                        SoundService.instance.playPop();
+                        _submit();
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   shadowColor: Colors.transparent,

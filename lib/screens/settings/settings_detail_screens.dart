@@ -156,7 +156,11 @@ class SettingsToggleRow extends StatelessWidget {
               activeTrackColor: const Color(0xFFE040FB),
               inactiveTrackColor: Colors.white.withValues(alpha: 0.15),
               onChanged: (v) {
-                SoundService.instance.playPop();
+                if (v) {
+                  SoundService.instance.playPop();
+                } else {
+                  SoundService.instance.playUndo();
+                }
                 onChanged(v);
               },
             ),
@@ -1081,7 +1085,103 @@ class _AddAccountSettingsScreenState extends State<AddAccountSettingsScreen> {
     );
   }
 }
+// ─────────────────────────────────────────────────────────────────────────────
+// SOUND SETTINGS SCREEN
+// ─────────────────────────────────────────────────────────────────────────────
 
+class SoundSettingsScreen extends StatefulWidget {
+  const SoundSettingsScreen({super.key});
+
+  @override
+  State<SoundSettingsScreen> createState() => _SoundSettingsScreenState();
+}
+
+class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
+  late double _master;
+  late double _sfx;
+  late double _bgm;
+
+  @override
+  void initState() {
+    super.initState();
+    _master = SoundService.instance.masterVolume;
+    _sfx = SoundService.instance.sfxVolume;
+    _bgm = SoundService.instance.bgmVolume;
+  }
+
+  Widget _slider({
+    required String label,
+    required double value,
+    required ValueChanged<double> onChanged,
+    required ValueChanged<double> onChangeEnd,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: SettingsGradientPanel(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(label,
+                    style: GoogleFonts.poppins(
+                        fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.onPanel)),
+                Text('${(value * 100).round()}%',
+                    style: GoogleFonts.poppins(fontSize: 13, color: AppColors.onPanelSecondary)),
+              ],
+            ),
+            Slider(
+              value: value,
+              min: 0,
+              max: 1,
+              divisions: 20,
+              activeColor: const Color(0xFFE040FB),
+              inactiveColor: Colors.white.withValues(alpha: 0.15),
+              onChanged: onChanged,
+              onChangeEnd: onChangeEnd,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SettingsSubpageScaffold(
+      title: 'Sound',
+      subtitle: 'Adjust music and sound effect volume.',
+      children: [
+        const SettingsSectionLabel(label: 'Overall'),
+        _slider(
+          label: 'Master volume',
+          value: _master,
+          onChanged: (v) => setState(() => _master = v),
+          onChangeEnd: (v) => SoundService.instance.setMasterVolume(v),
+        ),
+        const SettingsSectionLabel(label: 'Effects'),
+        _slider(
+          label: 'Sound effects',
+          value: _sfx,
+          onChanged: (v) => setState(() => _sfx = v),
+          onChangeEnd: (v) {
+            SoundService.instance.setSfxVolume(v);
+            SoundService.instance.playPop();
+          },
+        ),
+        const SettingsSectionLabel(label: 'Music'),
+        _slider(
+          label: 'Background music',
+          value: _bgm,
+          onChanged: (v) => setState(() => _bgm = v),
+          onChangeEnd: (v) => SoundService.instance.setBgmVolume(v),
+        ),
+      ],
+    );
+  }
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // HOUSE SETTINGS SCREEN  (owner only)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1207,7 +1307,10 @@ class _HouseSettingsScreenState extends State<HouseSettingsScreen> {
                     padding:
                         const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    SoundService.instance.playUndo();
+                    Navigator.pop(context);
+                  },
                   child: Text('Cancel',
                       style: GoogleFonts.poppins(
                           color: _sec, fontWeight: FontWeight.w600)),
@@ -1336,7 +1439,12 @@ class _HouseSettingsScreenState extends State<HouseSettingsScreen> {
                       ),
                       if (_editingName)
                         TextButton(
-                          onPressed: _saving ? null : _saveName,
+                          onPressed: _saving
+                              ? null
+                              : () {
+                                  SoundService.instance.playPop();
+                                  _saveName();
+                                },
                           child: Text('Save',
                               style: GoogleFonts.poppins(
                                   color: _pink,
@@ -1367,6 +1475,7 @@ class _HouseSettingsScreenState extends State<HouseSettingsScreen> {
                       ),
                       GestureDetector(
                         onTap: () {
+                          SoundService.instance.playPop();
                           Clipboard.setData(
                               ClipboardData(text: _inviteCode));
                           _snack('Code copied!');
@@ -1376,7 +1485,12 @@ class _HouseSettingsScreenState extends State<HouseSettingsScreen> {
                       ),
                       const SizedBox(width: 12),
                       GestureDetector(
-                        onTap: _saving ? null : _regen,
+                        onTap: _saving
+                            ? null
+                            : () {
+                                SoundService.instance.playPop();
+                                _regen();
+                              },
                         child: const Icon(Icons.refresh_rounded,
                             color: _pink, size: 22),
                       ),
@@ -1538,7 +1652,7 @@ class _PendingRow extends StatelessWidget {
             // Reject
             GestureDetector(
               onTap: () {
-                SoundService.instance.playPop();
+                SoundService.instance.playUndo();
                 onReject();
               },
               child: Container(

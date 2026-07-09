@@ -4,11 +4,10 @@ import 'package:intl/intl.dart';
 import '../../models/event_model.dart';
 import '../../cards/add_event_sheet.dart';
 import '../../services/firestore_service.dart';
+import '../../widgets/shared_app_bar.dart';
 import '../../cards/event_card.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../theme.dart';
 import '../../services/sound_service.dart';
-import '../../services/theme_service.dart';
 
 class CalendarScreen extends StatefulWidget {
   final String houseId;
@@ -34,15 +33,26 @@ class _CalendarScreenState extends State<CalendarScreen> {
   DateTime _selectedDay = DateTime.now();
   late Stream<List<EventModel>> _eventsStream;
 
-  static const _pink = Color(0xFFB721A9);
-
-  HomiePalette get _p => HomiePalette.current;
-  bool get _isLight => ThemeService.instance.isLight;
+  
+  static const _pink    = Color(0xFFB721A9);
+  static const _bg      = Color(0xFF000000);
+  static const _dimText = Color(0xFF555577);
 
   @override
   void initState() {
     super.initState();
     _eventsStream = _firestoreService.eventsStream(widget.houseId);
+  }
+
+  
+
+  String get _weekRangeLabel {
+    final now    = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final sunday = monday.add(const Duration(days: 6));
+    String fmt(DateTime d) =>
+        '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
+    return '(${fmt(monday)}-${fmt(sunday)})';
   }
 
   bool _isSameDay(DateTime a, DateTime b) =>
@@ -52,12 +62,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   List<DateTime> _getDaysInMonth(DateTime month) {
     final last = DateTime(month.year, month.month + 1, 0);
-    return List.generate(
-        last.day, (i) => DateTime(month.year, month.month, i + 1));
+    return List.generate(last.day,
+        (i) => DateTime(month.year, month.month, i + 1));
   }
 
+  
+  
   List<EventModel> _sortEventsForList(List<EventModel> events) {
-    final now = DateTime.now();
+    final now   = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
     bool isPast(EventModel e) {
@@ -74,6 +86,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return [...upcoming, ...done];
   }
 
+
   void _prevMonth() => setState(() {
         _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1, 1);
       });
@@ -89,50 +102,40 @@ class _CalendarScreenState extends State<CalendarScreen> {
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
       initialDatePickerMode: DatePickerMode.year,
-      builder: (context, child) {
-        final isLight = ThemeService.instance.isLight;
-        return Theme(
-          data: (isLight ? ThemeData.light() : ThemeData.dark()).copyWith(
-            colorScheme: isLight
-                ? ColorScheme.light(
-                    primary: _pink,
-                    onPrimary: Colors.white,
-                    surface: HomiePalette.current.cardBg,
-                    onSurface: HomiePalette.current.textPrimary,
-                  )
-                : const ColorScheme.dark(
-                    primary: _pink,
-                    onPrimary: Colors.white,
-                    surface: Color(0xFF1D1D35),
-                    onSurface: Colors.white,
-                  ),
-            dialogTheme: DialogThemeData(
-              backgroundColor: HomiePalette.current.dialogBg,
-            ),
+      builder: (context, child) => Theme(
+        data: ThemeData.dark().copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: _pink,
+            onPrimary: Colors.white,
+            surface: Color(0xFF1D1D35),
+            onSurface: Colors.white,
           ),
-          child: child!,
-        );
-      },
+          dialogTheme: const DialogThemeData(
+              backgroundColor: Color(0xFF0D0D1A)),
+        ),
+        child: child!,
+      ),
     );
     if (picked != null) {
       setState(() => _focusedDay = DateTime(picked.year, picked.month, 1));
     }
   }
 
+  
+
   @override
   Widget build(BuildContext context) {
     final days = _getDaysInMonth(_focusedDay);
 
     return Scaffold(
-      backgroundColor: _p.screenBg,
+      backgroundColor: _bg,
       body: StreamBuilder<List<EventModel>>(
         stream: _eventsStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(
               child: Text('Error: ${snapshot.error}',
-                  style: const TextStyle(color: Colors.redAccent)),
-            );
+                  style: const TextStyle(color: Colors.redAccent)));
           }
           if (snapshot.connectionState == ConnectionState.waiting &&
               !snapshot.hasData) {
@@ -141,48 +144,57 @@ class _CalendarScreenState extends State<CalendarScreen> {
           }
 
           final allEvents = snapshot.data ?? [];
-          final selectedEvents =
-              allEvents.where((e) => _eventOccursOn(e, _selectedDay)).toList();
-
-          final nonBirthdayEvents =
-              allEvents.where((e) => !e.isBirthday).toList();
+          final selectedEvents = allEvents
+              .where((e) => _eventOccursOn(e, _selectedDay))
+              .toList();
+        
+          final nonBirthdayEvents = allEvents.where((e) => !e.isBirthday).toList();
           final sortedAllEvents = _sortEventsForList(nonBirthdayEvents);
 
           return CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverToBoxAdapter(child: _buildMonthHeader()),
-              SliverToBoxAdapter(child: _buildWeekdayRow()),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildDayGrid(days, allEvents),
-                ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 8)),
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: _buildEventPanel(
-                    context, selectedEvents, sortedAllEvents),
-              ),
-            ],
-          );
+  physics: const BouncingScrollPhysics(),
+  slivers: [
+    SliverToBoxAdapter(child: _buildMonthHeader()),
+
+    SliverToBoxAdapter(child: _buildWeekdayRow()),
+
+    SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: _buildDayGrid(days, allEvents),
+      ),
+    ),
+
+    const SliverToBoxAdapter(
+      child: Divider(
+        color: Color(0xFF1A1A2E),
+        thickness: 1,
+        height: 8,
+      ),
+    ),
+
+    SliverFillRemaining(
+      hasScrollBody: false,
+      child: _buildEventPanel(context, selectedEvents, sortedAllEvents),
+    ),
+  ],
+);
         },
       ),
     );
   }
 
+  
+
   Widget _buildMonthHeader() {
     final label = DateFormat('MMMM yyyy').format(_focusedDay).toUpperCase();
-    final chevronColor = _p.textSecondary;
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 12, 8, 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            icon: Icon(Icons.chevron_left, color: chevronColor, size: 28),
+            icon: const Icon(Icons.chevron_left, color: Colors.white70, size: 28),
             onPressed: () {
               SoundService.instance.playPop();
               _prevMonth();
@@ -196,17 +208,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
               decoration: BoxDecoration(
-                color: _isLight ? _p.cardBg : const Color(0xFF111122),
+                color: const Color(0xFF111122),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: _isLight ? _p.cardBorder : Colors.white.withValues(alpha: 0.08),
-                ),
-                boxShadow: _isLight ? [_p.cardShadow] : null,
+                border:
+                    Border.all(color: Colors.white.withValues(alpha: 0.08)),
               ),
               child: Text(
                 label,
                 style: GoogleFonts.poppins(
-                  color: _p.textPrimary,
+                  color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
@@ -215,7 +225,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
           ),
           IconButton(
-            icon: Icon(Icons.chevron_right, color: chevronColor, size: 28),
+            icon: const Icon(Icons.chevron_right,
+                color: Colors.white70, size: 28),
             onPressed: () {
               SoundService.instance.playPop();
               _nextMonth();
@@ -226,6 +237,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  
+
   Widget _buildWeekdayRow() {
     const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
     return Padding(
@@ -235,25 +248,24 @@ class _CalendarScreenState extends State<CalendarScreen> {
         children: days
             .map((d) => SizedBox(
                   width: 36,
-                  child: Text(
-                    d,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      color: _p.textMuted,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  child: Text(d,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        color: _dimText,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      )),
                 ))
             .toList(),
       ),
     );
   }
 
+  
+
   Widget _buildDayGrid(List<DateTime> days, List<EventModel> events) {
     final paddingCount = days.first.weekday - 1;
-    final today = DateTime(
-        DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
 
     return GridView.builder(
       padding: EdgeInsets.zero,
@@ -262,7 +274,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       itemCount: days.length + paddingCount,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 7,
-        childAspectRatio: 1.15,
+        childAspectRatio: 1.15, 
         mainAxisSpacing: 0,
         crossAxisSpacing: 0,
       ),
@@ -274,33 +286,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
         final hasEvents = dayEvents.isNotEmpty;
         final hasBirthday = dayEvents.any((e) => e.isBirthday);
         final isPast = day.isBefore(today);
-        final hasGlow = hasEvents && !isPast;
-
-        // Glow assets are dark-mode art; on light mode use a soft tint instead.
-        final Color dayColor;
-        if (hasGlow) {
-          dayColor = Colors.white;
-        } else if (isPast) {
-          dayColor = _p.textMuted.withValues(alpha: 0.45);
-        } else {
-          dayColor = _p.textPrimary;
-        }
 
         return GestureDetector(
           onTap: () {
-            SoundService.instance.playPop();
-            setState(() => _selectedDay = day);
-          },
+              SoundService.instance.playPop();
+              setState(() => _selectedDay = day);
+            },
           child: Container(
             margin: const EdgeInsets.all(1),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: hasGlow && _isLight
-                  ? (hasBirthday
-                      ? const Color(0xFFFFC107).withValues(alpha: 0.35)
-                      : _pink.withValues(alpha: 0.28))
-                  : Colors.transparent,
-              image: hasGlow && !_isLight
+              color: Colors.transparent,
+              image: (hasEvents && !isPast)
                   ? DecorationImage(
                       image: AssetImage(
                         hasBirthday
@@ -316,10 +313,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
             child: Text(
               '${day.day}',
               style: GoogleFonts.poppins(
-                color: dayColor,
+                color: isPast ? Colors.white24 : Colors.white,
                 fontSize: 18,
-                fontWeight:
-                    (hasEvents || isSelected) ? FontWeight.bold : FontWeight.w500,
+                fontWeight: (hasEvents || isSelected) ? FontWeight.bold : FontWeight.w500,
               ),
             ),
           ),
@@ -328,18 +324,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _buildEventPanel(
-    BuildContext context,
-    List<EventModel> selectedEvents,
-    List<EventModel> allEvents,
-  ) {
+  
+
+  
+
+Widget _buildEventPanel(BuildContext context, List<EventModel> selectedEvents, List<EventModel> allEvents) {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16), 
           child: GestureDetector(
             onTap: () {
               SoundService.instance.playPop();
@@ -353,12 +350,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
               decoration: BoxDecoration(
-                color: _isLight ? AppColors.pink : const Color(0xFF111122),
+                color: const Color(0xFF111122),
                 borderRadius: BorderRadius.circular(12),
-                border: _isLight
-                    ? null
-                    : Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                boxShadow: _isLight ? [_p.cardShadow] : null,
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -367,9 +361,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     'assets/images/calendar/plus_sign.svg',
                     width: 20,
                     height: 20,
-                    colorFilter: _isLight
-                        ? const ColorFilter.mode(Colors.white, BlendMode.srcIn)
-                        : null,
                   ),
                   const SizedBox(width: 10),
                   Text(
@@ -386,57 +377,50 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
           ),
         ),
-        Container(
-          height: screenHeight * 0.40,
+
+        
+      Container(
+          height: screenHeight * 0.40, 
           width: double.infinity,
           margin: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: _isLight ? _p.cardBg : null,
-            borderRadius: BorderRadius.circular(_isLight ? 28 : 0),
-            border: _isLight ? Border.all(color: _p.cardBorder) : null,
-            boxShadow: _isLight ? [_p.cardShadow] : null,
-            image: _isLight
-                ? null
-                : const DecorationImage(
-                    image: AssetImage(
-                        'assets/images/calendar/EventMainPanel.png'),
-                    fit: BoxFit.fill,
-                  ),
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/images/calendar/EventMainPanel.png'),
+              fit: BoxFit.fill,
+            ),
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(25, 25, 25, 40),
-            child: Builder(
-              builder: (context) {
-                final birthdayToday =
-                    selectedEvents.where((e) => e.isBirthday).toList();
-                final combined = [...birthdayToday, ...allEvents];
+            padding: const EdgeInsets.fromLTRB(25, 25, 25, 40), 
+            child: () {
+              final birthdayToday = selectedEvents.where((e) => e.isBirthday).toList();
+              final combined = [...birthdayToday, ...allEvents];
 
-                if (combined.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'No events scheduled',
-                      style: GoogleFonts.poppins(color: _p.textMuted),
-                    ),
-                  );
-                }
-
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: ListView.builder(
-                    padding: EdgeInsets.zero,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: combined.length,
-                    itemBuilder: (context, i) {
-                      return EventCard(
-                        event: combined[i],
-                        houseId: widget.houseId,
-                        currentUserId: widget.currentUserId,
-                      );
-                    },
+              if (combined.isEmpty) {
+                return Center(
+                  child: Text(
+                    'No events scheduled',
+                    style: GoogleFonts.poppins(color: const Color(0xFF555577)),
                   ),
                 );
-              },
-            ),
+              }
+
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  shrinkWrap: false,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: combined.length,
+                  itemBuilder: (context, i) {
+                    return EventCard(
+                      event: combined[i],
+                      houseId: widget.houseId,
+                      currentUserId: widget.currentUserId,
+                    );
+                  },
+                ),
+              );
+            }(),
           ),
         ),
         const SizedBox(height: 20),

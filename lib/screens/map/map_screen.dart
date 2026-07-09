@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../theme.dart';
 import '../home/home_widgets.dart';
+import '../../services/sound_service.dart';
 
 class MapScreen extends StatefulWidget {
   final String houseId;
@@ -150,6 +151,7 @@ class _MapScreenState extends State<MapScreen> {
                   label: "I've arrived",
                   color: const Color(0xFF4CAF50),
                   onTap: () {
+                    SoundService.instance.playPop();
                     Navigator.pop(sheetContext);
                     _sendNotification(
                       toUserId: memberId,
@@ -164,6 +166,7 @@ class _MapScreenState extends State<MapScreen> {
                   label: "I'm leaving",
                   color: const Color(0xFFE040FB),
                   onTap: () {
+                    SoundService.instance.playPop();
                     Navigator.pop(sheetContext);
                     _sendNotification(
                       toUserId: memberId,
@@ -272,10 +275,13 @@ class _MapScreenState extends State<MapScreen> {
                         alignment: Alignment.topCenter,
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
-                          onTap: () => _onMarkerTap(
-                            memberId: doc.id,
-                            memberName: name,
-                          ),
+                          onTap: () {
+                            SoundService.instance.playPop();
+                            _onMarkerTap(
+                              memberId: doc.id,
+                              memberName: name,
+                            );
+                          },
                           child: _MemberPin(
                             avatarIndex: d['avatarIndex'] as int? ?? 0,
                             battery: d['batteryLevel'] as int? ?? 0,
@@ -358,7 +364,10 @@ class _MemberAvatarStrip extends StatelessWidget {
           final lng = d['lastLng'] as double;
 
           return GestureDetector(
-            onTap: () => onMemberSelected(doc.id, lat, lng),
+            onTap: () {
+              SoundService.instance.playPop();
+              onMemberSelected(doc.id, lat, lng);
+            },
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -465,7 +474,13 @@ class _ErrorState extends StatelessWidget {
                 style: TextStyle(color: AppColors.onPanelSecondary)),
             if (onRetry != null) ...[
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
+              ElevatedButton(
+                onPressed: () {
+                  SoundService.instance.playPop();
+                  onRetry!();
+                },
+                child: const Text('Retry'),
+              ),
             ],
           ],
         ),

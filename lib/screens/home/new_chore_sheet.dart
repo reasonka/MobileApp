@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../models/chore_model.dart';
 import '../../services/firestore_service.dart';
 import '../../theme.dart';
+import '../../services/sound_service.dart';
 
 class NewChoreSheet extends StatefulWidget {
   final String userId;
@@ -164,7 +165,10 @@ class _NewChoreSheetState extends State<NewChoreSheet> {
                 final selected = _assignedTo == uid;
 
                 return GestureDetector(
-                  onTap: () => setState(() => _assignedTo = uid),
+                  onTap: () {
+                    SoundService.instance.playPop();
+                    setState(() => _assignedTo = uid);
+                  },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
                     padding: const EdgeInsets.symmetric(
@@ -251,7 +255,12 @@ class _NewChoreSheetState extends State<NewChoreSheet> {
                 borderRadius: BorderRadius.circular(14),
               ),
               child: ElevatedButton(
-                onPressed: _loading ? null : _submit,
+                onPressed: _loading
+                    ? null
+                    : () {
+                        SoundService.instance.playPop();
+                        _submit();
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   shadowColor: Colors.transparent,

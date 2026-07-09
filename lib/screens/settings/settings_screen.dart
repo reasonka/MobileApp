@@ -120,6 +120,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         onTap: () => _open(const ThemeSettingsScreen()),
       ),
       _MenuItem(
+        label: 'Sound',
+        icon: 'sound',
+        onTap: () => _open(const SoundSettingsScreen()),
+      ),
+      _MenuItem(
         label: 'Help',
         icon: 'help',
         onTap: () => _open(const HelpSettingsScreen()),

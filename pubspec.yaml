@@ -69,6 +69,10 @@ flutter:
     - assets/sounds/delete.mp3
     - assets/sounds/done.mp3
     - assets/sounds/swipe.mp3
+    - assets/sounds/
+    - assets/images/settings/
+    
+    
 
   fonts:
     - family: Poppins

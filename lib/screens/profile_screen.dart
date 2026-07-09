@@ -204,6 +204,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       borderRadius: BorderRadius.circular(14)),
                 ),
                 onPressed: () async {
+                  SoundService.instance.playPop();
                   final newBio = ctrl.text.trim();
                   await _db.collection('users').doc(widget.userId).update({
                     'bio': newBio.isEmpty ? FieldValue.delete() : newBio,
@@ -375,7 +376,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   : '—',
                               onTap: () {
                                 if (_inviteCode.isEmpty) return;
-                                SoundService.instance.playPop();
                                 Clipboard.setData(
                                     ClipboardData(text: _inviteCode));
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -422,20 +422,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   _open(const PrivacySettingsScreen()),
                             ),
                             _InfoRow(
-                              icon: Icons.palette_outlined,
-                              label: 'Theme',
-                              value: _themeLabel,
-                              onTap: () =>
-                                  _open(const ThemeSettingsScreen()),
-                            ),
-                            _InfoRow(
-                              icon: Icons.help_outline_rounded,
-                              label: 'Help',
-                              value: 'FAQs & support',
-                              onTap: () =>
-                                  _open(const HelpSettingsScreen()),
-                              isLast: true,
-                            ),
+                                icon: Icons.palette_outlined,
+                                label: 'Theme',
+                                value: _themeLabel,
+                                onTap: () =>
+                                    _open(const ThemeSettingsScreen()),
+                              ),
+                              _InfoRow(
+                                icon: Icons.volume_up_outlined,
+                                label: 'Sound',
+                                value: 'Music & effects volume',
+                                onTap: () => _open(const SoundSettingsScreen()),
+                              ),
+                              _InfoRow(
+                                icon: Icons.help_outline_rounded,
+                                label: 'Help',
+                                value: 'FAQs & support',
+                                onTap: () =>
+                                    _open(const HelpSettingsScreen()),
+                                isLast: true,
+                              ),
                           ],
                         ),
                         const SizedBox(height: 60),
@@ -471,7 +477,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               GestureDetector(
-                onTap: () => Navigator.pop(context),
+                onTap: () {
+                  SoundService.instance.playPop();
+                  Navigator.pop(context);
+                },
                 child: Container(
                   width: 44,
                   height: 44,
@@ -484,7 +493,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               GestureDetector(
-                onTap: _showQr,
+                onTap: () {
+                  SoundService.instance.playPop();
+                  _showQr();
+                },
                 child: Container(
                   width: 44,
                   height: 44,
@@ -632,7 +644,10 @@ class _InfoRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       child: GestureDetector(
-        onTap: onTap,
+        onTap: () {
+          SoundService.instance.playPop();
+          onTap();
+        },
         behavior: HitTestBehavior.opaque,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),

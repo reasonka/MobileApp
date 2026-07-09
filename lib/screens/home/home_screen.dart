@@ -378,6 +378,7 @@ void _listenToMembers() async {
                         borderRadius: BorderRadius.circular(14)),
                   ),
                   onPressed: () {
+                    SoundService.instance.playPop();
                     _fs.voteOnChoreXP(
                       choreId: chore.choreId,
                       userId: widget.userId,
@@ -686,7 +687,10 @@ void _listenToMembers() async {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    SoundService.instance.playPop();
+                    Navigator.pop(context);
+                  },
                   child: Text('Got it!',
                       style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w600, color: AppColors.onPanel)),
@@ -969,7 +973,16 @@ class _ChoreCard extends StatelessWidget {
           ),
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: canToggle ? () => onToggle!(chore) : null,
+            onTap: canToggle
+                ? () {
+                    if (chore.completed) {
+                      SoundService.instance.playUndo();
+                    } else {
+                      SoundService.instance.playPop();
+                    }
+                    onToggle!(chore);
+                  }
+                : null,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               width: 24,
@@ -1113,7 +1126,10 @@ class _HousemateOverlay extends StatelessWidget {
           _ChoreCard(chores: chores, isOwner: false),
           const SizedBox(height: 16),
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              SoundService.instance.playUndo();
+              Navigator.pop(context);
+            },
             child: Text(
               'Close',
               style: GoogleFonts.poppins(color: AppColors.pink),
@@ -1141,7 +1157,10 @@ class _SmallButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        SoundService.instance.playPop();
+        onTap();
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(

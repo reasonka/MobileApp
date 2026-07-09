@@ -89,27 +89,24 @@ class _HouseAppBarState extends State<HouseAppBar> {
     );
     if (mounted) {
       setState(() {
-        if (widget.houseName == null)
+        if (widget.houseName == null) {
           _houseName = (house?['name'] as String?) ?? 'Our House';
-        if (widget.avatarIndex == null)
+        }
+        if (widget.avatarIndex == null) {
           _avatarIndex = me['avatarIndex'] as int? ?? 0;
+        }
       });
     }
   }
 
- @override
+@override
 Widget build(BuildContext context) {
   final double statusBarHeight = MediaQuery.of(context).padding.top;
   final double toolbarHeight = _houseName.length > 14 ? 75.0 : 30.0;
 
-  return SliverAppBar(
-    pinned: true,
-    automaticallyImplyLeading: false,
-    backgroundColor: Colors.transparent,
-    elevation: 0,
-    scrolledUnderElevation: 0,
-    toolbarHeight: toolbarHeight + statusBarHeight,
-    flexibleSpace: LayoutBuilder(
+  return SizedBox(
+    height: toolbarHeight + statusBarHeight,
+    child: LayoutBuilder(
       builder: (context, constraints) {
         return Stack(
           children: [
@@ -200,10 +197,6 @@ Widget build(BuildContext context) {
           ],
         );
       },
-    ),
-    bottom: const PreferredSize(
-      preferredSize: Size.fromHeight(0),
-      child: SizedBox.shrink(),
     ),
   );
 }}
