@@ -46,7 +46,7 @@ class SoundService {
   _sfxVolume = prefs.getDouble(_kSfxKey) ?? 1.0;
   _bgmVolume = prefs.getDouble(_kBgmKey) ?? 1.0;
 
-  // BGM holds audio focus for the whole session.
+
   final bgmContext = AudioContext(
     android: AudioContextAndroid(
       contentType: AndroidContentType.music,
@@ -63,7 +63,7 @@ class SoundService {
 final sfxContext = AudioContext(
   android: AudioContextAndroid(
     contentType: AndroidContentType.sonification,
-    usageType: AndroidUsageType.assistanceSonification,
+    usageType: AndroidUsageType.media,
     audioFocus: AndroidAudioFocus.none,
   ),
   iOS: AudioContextIOS(
